@@ -42,7 +42,7 @@
 <li>Easy integration on the View layer (i.e. form builders)</li>
 <li>Reflect the nature of NoSQL in general and ArangoDB in particular</li>
 <li>Focus on long-term maintainability of your application</li>
-</ul><p>While the first two points don't need any further explanation we want to lay out the motivation behind the last point: 'Ease of use' is very important to us, but we made some fundamental decisions which will cause a stepper learning curve than other libraries, notably ActiveRecord. If you have a traditional Rails background you will find some things quite different. We decided to go this direction, because we think it better suites the features of ArangoDB. Applying the semantics of a different environment maybe helps with the first steps but will become problematic if you further advance in your understanding of the possibilities.</p>
+</ul><p>While the first two points don't need any further explanation we want to lay out the motivation behind the last point: 'Ease of use' is very important to us, but we made some fundamental decisions which will cause a steeper learning curve than other libraries, notably ActiveRecord. If you have a traditional Rails background you will find some things quite different. We decided to go this direction, because we think it better suites the features of ArangoDB. Applying the semantics of a different environment may help with the first steps but will become problematic if you further advance in your understanding of the possibilities.</p>
 
 <p>That said we still think we provide a sufficient API that is quite easy to get hold of. It is just a bit different from what you were doing with ActiveRecord.</p>
 
@@ -51,7 +51,7 @@
 <h2>
 <a name="getting-started-with-a-fresh-rails-application" class="anchor" href="#getting-started-with-a-fresh-rails-application"><span class="octicon octicon-link"></span></a>Getting started (with a fresh Rails application)</h2>
 
-<p>Since Guacamole is in an alpha state we suggest you create a new Rails application to play around with it. We don't recommend adding it to a production application.</p>
+<p>Since Guacamole is in an alpha state we suggest you to create a new Rails application to play around with it. We don't recommend adding it to a production application.</p>
 
 <p>First of all create your shiny new application, without ActiveRecord of course:</p>
 
@@ -99,12 +99,12 @@
 <h2>
 <a name="usage" class="anchor" href="#usage"><span class="octicon octicon-link"></span></a>Usage</h2>
 
-<p>One of the key features of Guacamole is the implementation of the <a href="http://martinfowler.com/eaaCatalog/dataMapper.html">Data Mapper Patter</a>. This brings a lot of good things along, like</p>
+<p>One of the key features of Guacamole is the implementation of the <a href="http://martinfowler.com/eaaCatalog/dataMapper.html">Data Mapper Pattern</a>. This brings a lot of good things along, like</p>
 
 <ul>
-<li>Improved testability</li>
-<li>Separation of Concern and</li>
-<li>Easier to support database features like embedded objects</li>
+<li>improved testability</li>
+<li>separation of concerns and</li>
+<li>easier to support database features like embedded objects</li>
 </ul><p>The gist of the pattern is you have two classes where you would have one when you use ActiveRecord: A <code>Collection</code> and a <code>Model</code>. The <code>Collection</code> is responsible for getting data from and writing data to the database. The <code>Model</code> represents the domain logic (i.e. attributes) and has no idea what a database is. Due to this you could far easier test the domain logic without a database dependency. But you have always two (or more) classes around. The following will introduce you to both those classes.</p>
 
 <h3>
@@ -126,7 +126,7 @@
 <span class="k">end</span>
 </pre></div>
 
-<p>Since the database doesn't know anything about a schema we must define the attributes in the model class itself. At the same time this has the advantage to open the model class and see what attributes it has. An attribute is defined with the <code>attribute</code> class method. We use <a href="https://github.com/solnic/virtus">Virtus</a> for this purpose. Basically you add give the attribute a name and a type. The type have to be the actual class and <strong>not</strong> a string representation of the class. You could even define collection classes:</p>
+<p>Since the database doesn't know anything about a schema we must define the attributes in the model class itself. At the same time this has the advantage to open the model class and see what attributes it has. An attribute is defined with the <code>attribute</code> class method. We use <a href="https://github.com/solnic/virtus">Virtus</a> for this purpose. Basically you give the attribute a name and a type. The type have to be the actual class and <strong>not</strong> a string representation of the class. You could even define collection classes:</p>
 
 <div class="highlight highlight-ruby"><pre><span class="k">class</span> <span class="nc">Pony</span>
   <span class="kp">include</span> <span class="no">Guacamole</span><span class="o">::</span><span class="no">Model</span>
@@ -135,7 +135,7 @@
 <span class="k">end</span>
 </pre></div>
 
-<p>For further reference what is possible please refer to the <a href="http://rubydoc.info/gems/virtus/1.0.2/frames">Virtus documentation</a>. One thing to add here, whenever you assign a value to an attribute Virtus will perform a type coercion:</p>
+<p>For further reference what is possible please refer to the <a href="http://rubydoc.info/gems/virtus/1.0.2/frames">Virtus documentation</a>. One thing to note here: Whenever you assign a value to an attribute Virtus will perform a type coercion:</p>
 
 <div class="highlight highlight-ruby"><pre><span class="n">pinkie_pie</span> <span class="o">=</span> <span class="no">Pony</span><span class="o">.</span><span class="n">new</span>
 <span class="n">pinkie_pie</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="ss">:pink</span>
@@ -147,12 +147,12 @@
 <h4>
 <a name="timestamps" class="anchor" href="#timestamps"><span class="octicon octicon-link"></span></a>Timestamps</h4>
 
-<p>We will automatically add time stamp columns to all models when you include <code>Guacamole::Model</code>. We eventually will make this configurable, but for now it is not.</p>
+<p>We will automatically add both a <code>created_at</code> and an <code>updated_at</code> attribute to all your models. Both will hold a <code>DateTime</code> and will be populated on creating or updating the model in the database.</p>
 
 <h4>
 <a name="the-id-of-a-model" class="anchor" href="#the-id-of-a-model"><span class="octicon octicon-link"></span></a>The ID of a model</h4>
 
-<p>In ArangoDB a document has three internal fields: <code>_id</code>, <code>_key</code> and <code>_rev</code>. For a detailed explanation how these three work together please refer to the <a href="https://www.arangodb.org/manuals/2/HandlingDocuments.html#HandlingDocumentsIntro">ArangoDB documentation</a>. Within Guacamole we will always you the <code>_key</code> because it is enough the identify any document within a collection. Both the <code>_key</code> and <code>_rev</code> attribute are available through the <code>Guacamole::Model#key</code> and <code>Guacamole::Model#rev</code> attribute. You don't have to do anything for this, we will take care of this for you.</p>
+<p>In ArangoDB a document has three internal fields: <code>_id</code>, <code>_key</code> and <code>_rev</code>. For a detailed explanation how these three work together please refer to the <a href="https://www.arangodb.org/manuals/2/HandlingDocuments.html#HandlingDocumentsIntro">ArangoDB documentation</a>. Within Guacamole we will always use the <code>_key</code> because it is enough the identify any document within a collection. Both the <code>_key</code> and <code>_rev</code> attribute are available through the <code>Guacamole::Model#key</code> and <code>Guacamole::Model#rev</code> attribute. You don't have to do anything for this, we will take care of this for you.</p>
 
 <p>Additionally you will find an <code>id</code> method on you models. This is just an alias for <code>key</code>. This was added for <code>ActiveModel::Conversion</code> compliance. You <strong>should always</strong> use <code>key</code>.</p>
 
@@ -201,7 +201,7 @@
 <li>Where the "Read"-part is limited to <a href="https://www.arangodb.org/manuals/2/SimpleQueries.html">Simple Queries</a>. But more on this later.</li>
 <li>Mapping embedded models</li>
 <li>Realizing basic associations</li>
-</ul><p>For all the mapping related parts you don't have any configuration options yet, but have to stick with the conventions. Obviously this will change in the future but for now there more important parts to work on. Before we dig deeper into the mapping of embedded or associated models let us look at the CRUD functionality.</p>
+</ul><p>For all the mapping related parts you don't have any configuration options yet, but have to stick with the conventions. Obviously this will change in the future but for now there are more important parts to work on. Before we dig deeper into the mapping of embedded or associated models let us look at the CRUD functionality.</p>
 
 <h4>
 <a name="create-models" class="anchor" href="#create-models"><span class="octicon octicon-link"></span></a>Create models</h4>
@@ -263,7 +263,7 @@
 <h3>
 <a name="mapping" class="anchor" href="#mapping"><span class="octicon octicon-link"></span></a>Mapping</h3>
 
-<p>As the name "Data Mapper" suggests there is some sort of mapping going on behind the scenes. The mapping relates to the process of <em>mapping</em> documents from the database to the domain models. </p>
+<p>As the name "Data Mapper" suggests there is some sort of mapping going on behind the scenes. The mapping relates to the process of <em>mapping</em> documents from the database to the domain models.</p>
 
 <p>The <code>Collection</code> class will lookup the appropriate <code>Model</code> class based on its own name (i.e.: the <code>PoniesCollection</code> will look for a <code>Pony</code> class). Currently there is no option to configure this so you're stuck with our conventions (for now):</p>
 
@@ -282,14 +282,23 @@
 <span class="p">}</span>
 </pre></div>
 
-<p>When we receive this document and map it against the above mentioned model there will be no <code>occupation</code> attribute be present:</p>
+<p>When we receive this document and map it against the <code>Pony</code> model there won't be a <code>occupation</code> attribute:</p>
 
-<div class="highlight highlight-ruby"><pre><span class="n">pony</span> <span class="o">=</span> <span class="no">PoniesCollection</span><span class="o">.</span><span class="n">by_key</span> <span class="s2">"303"</span>
+<div class="highlight highlight-ruby"><pre><span class="k">class</span> <span class="nc">Pony</span>
+  <span class="kp">include</span> <span class="no">Guacamole</span><span class="o">::</span><span class="no">Model</span>
+
+  <span class="n">attribute</span> <span class="ss">:name</span><span class="p">,</span> <span class="nb">String</span>
+  <span class="n">attribute</span> <span class="ss">:color</span><span class="p">,</span> <span class="nb">String</span>
+<span class="k">end</span>
+
+<span class="n">pony</span> <span class="o">=</span> <span class="no">PoniesCollection</span><span class="o">.</span><span class="n">by_key</span> <span class="s2">"303"</span>
+<span class="n">pony</span><span class="o">.</span><span class="n">color</span>
+<span class="c1"># =&gt; 'green'</span>
 <span class="n">pony</span><span class="o">.</span><span class="n">occupation</span>
 <span class="c1"># =&gt; NoMethodError: undefined method `occupation' for #&lt;Pony:0x00000105fc77f8&gt;</span>
 </pre></div>
 
-<p>Currently there is not option to change the mapping of attributes. If you want to map more or less attributes you should create another model for that purpose.</p>
+<p>Currently there is no option to change the mapping of attributes. If you want to map more or less attributes you should create another model for that purpose.</p>
 
 <h4>
 <a name="associations" class="anchor" href="#associations"><span class="octicon octicon-link"></span></a>Associations</h4>
@@ -419,7 +428,7 @@
 
 <p>Currently we're not providing any testing helper, thus you need to make sure to cleanup the database yourself before each run. You can look at the <a href="https://github.com/triAGENS/guacamole/blob/master/spec/acceptance/spec_helper.rb"><code>spec/acceptance/spec_helper.rb</code></a> of Guacamole for inspiration of how to do that.</p>
 
-<p>For test data generation we're using the awesome <a href="http://www.fabricationgem.org/">Fabrication gem</a>. Again you find some usage examples in under Guacamole's own acceptance tests. We didn't tested Factory Girl yet, but it eventually will work, too.</p>
+<p>For test data generation we're using the awesome <a href="http://www.fabricationgem.org/">Fabrication gem</a>. Again you find some usage examples in Guacamole's own acceptance tests. We didn't tested Factory Girl yet, but it eventually will work, too.</p>
 
 <h3>
 <a name="authentication" class="anchor" href="#authentication"><span class="octicon octicon-link"></span></a>Authentication</h3>
@@ -444,7 +453,26 @@
 <li>Callbacks and dirty tracking for models</li>
 <li>An example Rails application to be used as both an acceptance test suite and a head start for Guacamole and ArangoDB</li>
 <li>An AQL query builder</li>
-</ul><h2>
+</ul><h3>
+<a name="experimental-aql-support" class="anchor" href="#experimental-aql-support"><span class="octicon octicon-link"></span></a>Experimental AQL Support</h3>
+
+<p>As mentioned before we're working on <a href="https://github.com/moonglum/brazil/issues/8">something more sophisticated to support AQL</a>. But this will not be finished any time soon. Meanwhile you could play with the experimental AQL support:</p>
+
+<div class="highlight highlight-ruby"><pre><span class="n">config</span><span class="o">.</span><span class="n">guacamole</span><span class="o">.</span><span class="n">experimental_features</span> <span class="o">=</span> <span class="o">[</span><span class="ss">:aql_support</span><span class="o">]</span>
+</pre></div>
+
+<p>After that you can perform very basic queries like this one:</p>
+
+<div class="highlight highlight-ruby"><pre><span class="no">PoniesCollection</span><span class="o">.</span><span class="n">by_aql</span><span class="p">(</span><span class="s1">'FILTER pony.name == @name'</span><span class="p">,</span> <span class="nb">name</span><span class="p">:</span> <span class="s1">'Rainbow Dash'</span><span class="p">)</span>
+</pre></div>
+
+<p>The result of this will a correctly mapped Array of <code>Pony</code> models.</p>
+
+<p><strong>Note</strong>: Please use only this form to pass parameters into a query. Using string interpolation will leave you vulnerable to AQL-injections.</p>
+
+<p>For more information about usage please refer to the RDoc and the code.</p>
+
+<h2>
 <a name="issues-or-questions" class="anchor" href="#issues-or-questions"><span class="octicon octicon-link"></span></a>Issues or Questions</h2>
 
 <p>If you find a bug in this gem, please report it on <a href="https://github.com/triAGENS/guacamole/issues">our tracker</a>. We use <a href="https://waffle.io/triagens/guacamole">Waffle.io</a> to manage the tickets – go there to see the current status of the ticket. If you have a question, just contact us via the <a href="https://groups.google.com/forum/?fromgroups#!forum/ashikawa">mailing list</a> – we are happy to help you <img class="emoji" title=":smile:" alt=":smile:" src="https://github.global.ssl.fastly.net/images/icons/emoji/smile.png" height="20" width="20" align="absmiddle"></p>

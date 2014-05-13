@@ -182,7 +182,7 @@
 <h3>
 <a name="collections" class="anchor" href="#collections"><span class="octicon octicon-link"></span></a>Collections</h3>
 
-<p>Collections are your gateway to the database. They persist your models and offer querying for them. They will translate the raw data from the database to your domain models and vice versa. By convention they are the pluralized version of the model with the suffix <code>Collection</code>. So given the model from above, this could be the according collection:</p>
+<p>Collections are your gateway to the database. They persist your models and offer querying for them. They will translate the raw data from the database to your domain models and vice versa. By convention they are the pluralized version of the model with the suffix <code>Collection</code>. So given the model from above, this could be the following collection:</p>
 
 <div class="highlight highlight-ruby"><pre><span class="k">class</span> <span class="nc">PoniesCollection</span>
   <span class="kp">include</span> <span class="no">Guacamole</span><span class="o">::</span><span class="no">Collection</span>
@@ -336,14 +336,14 @@
 <p>As you can see, from the model perspective there is nothing special about an embedded association. It is just another attribute on the <code>Post</code> class. How this is stored will be configured where it is handled: In the <code>PostsCollection</code>. Within the <code>map</code> block you put all the mapping related configuration. The <code>embeds</code> method will make sure that <code>Comment</code>s are correctly stored and received within the database. Be aware that embedded models will not have any <code>_key</code>, <code>_id</code> or <code>_rev</code> attribute. But they will have the time stamp attributes correctly populated. Within ArangoDB the resulting document will look like this:</p>
 
 <div class="highlight highlight-json"><pre><span class="p">{</span>
-  <span class="nt">"_id"</span><span class="p">:</span> <span class="p">[</span><span class="err">...</span><span class="p">],</span>
-  <span class="nt">"_rev"</span><span class="p">:</span> <span class="p">[</span><span class="err">...</span><span class="p">],</span>
-  <span class="nt">"_key"</span><span class="p">:</span> <span class="p">[</span><span class="err">...</span><span class="p">],</span>
+  <span class="nt">"_id"</span><span class="p">:</span> <span class="s2">"..."</span><span class="p">,</span>
+  <span class="nt">"_rev"</span><span class="p">:</span> <span class="s2">"..."</span><span class="p">,</span>
+  <span class="nt">"_key"</span><span class="p">:</span> <span class="s2">"..."</span><span class="p">,</span>
   <span class="nt">"title"</span><span class="p">:</span> <span class="s2">"The grand blog post"</span><span class="p">,</span>
   <span class="nt">"body"</span><span class="p">:</span> <span class="s2">"Lorem ipsum [...]"</span><span class="p">,</span>
   <span class="nt">"create_at"</span><span class="p">:</span> <span class="s2">"2014-05-03T16:55:43+02:00"</span><span class="p">,</span>
-  <span class="nt">"updated_at"</span><span class="p">:</span> <span class="s2">"2014-05-03T16:55:43+02:00"</span>
-  <span class="s2">"comments"</span><span class="p">:</span> <span class="p">[</span>
+  <span class="nt">"updated_at"</span><span class="p">:</span> <span class="s2">"2014-05-03T16:55:43+02:00"</span><span class="p">,</span>
+  <span class="nt">"comments"</span><span class="p">:</span> <span class="p">[</span>
     <span class="p">{</span>
       <span class="nt">"text"</span><span class="p">:</span> <span class="s2">"This was really a grand blog post"</span><span class="p">,</span>
       <span class="nt">"create_at"</span><span class="p">:</span> <span class="s2">"2014-05-08T16:55:43+02:00"</span><span class="p">,</span>
@@ -355,6 +355,7 @@
       <span class="nt">"updated_at"</span><span class="p">:</span> <span class="s2">"2014-05-04T16:55:43+02:00"</span>
     <span class="p">}</span>
   <span class="p">]</span>
+<span class="p">}</span>
 </pre></div>
 
 <p><strong>Note</strong>: Again this will only work if you stick with the convention. So far there is no support to configure this more fine grained.</p>
@@ -397,7 +398,7 @@
   <span class="kp">include</span> <span class="no">Guacamole</span><span class="o">::</span><span class="no">Collection</span>
 
   <span class="n">map</span> <span class="k">do</span>
-    <span class="n">references</span> <span class="ss">:user</span>
+    <span class="n">references</span> <span class="ss">:author</span>
   <span class="k">end</span>
 <span class="k">end</span>
 </pre></div>
@@ -428,19 +429,19 @@
 
 <p>Currently we're not providing any testing helper, thus you need to make sure to cleanup the database yourself before each run. You can look at the <a href="https://github.com/triAGENS/guacamole/blob/master/spec/acceptance/spec_helper.rb"><code>spec/acceptance/spec_helper.rb</code></a> of Guacamole for inspiration of how to do that.</p>
 
-<p>For test data generation we're using the awesome <a href="http://www.fabricationgem.org/">Fabrication gem</a>. Again you find some usage examples in Guacamole's own acceptance tests. We didn't tested Factory Girl yet, but it eventually will work, too.</p>
+<p>For test data generation we're using the awesome <a href="http://www.fabricationgem.org/">Fabrication gem</a>. Again you find some usage examples in Guacamole's own acceptance tests. We haven't tested Factory Girl yet but it eventually will work too.</p>
 
 <h3>
 <a name="authentication" class="anchor" href="#authentication"><span class="octicon octicon-link"></span></a>Authentication</h3>
 
-<p>Any integration into an authentication framework need to be done by you. At this time we have nothing to share with you about this topic.</p>
+<p>Any integration into an authentication framework needs to be done by you. At this time we have nothing to share with you about this topic.</p>
 
 <h3>
 <a name="forms" class="anchor" href="#forms"><span class="octicon octicon-link"></span></a>Forms</h3>
 
-<p>While we not tested them they should probably work due to the ActiveModel compliance. But again, this not confirmed and you need to try it out by yourself.</p>
+<p>While we haven't tested them, they should probably work due to the ActiveModel compliance. But again, this is not confirmed and you need to try it out yourself.</p>
 
-<p>If you give Guacamole a try, please feel free to ask us any question or give us feedback to anything on your mind. This is really crucial for us and we would be more than happy to hear back from you.</p>
+<p>If you give Guacamole a try, please feel free to ask us any question or give us feedback about anything on your mind. This is really crucial for us and we would be more than happy to hear back from you.</p>
 
 <h2>
 <a name="todos" class="anchor" href="#todos"><span class="octicon octicon-link"></span></a>Todos</h2>

@@ -31,6 +31,7 @@
         <p><a href="http://rubydoc.info/gems/guacamole/frames"><img src="http://img.shields.io/badge/%F0%9F%93%84-RubyDoc-be1d77.svg" alt="RubyDoc"></a>
 <a href="https://travis-ci.org/triAGENS/guacamole"><img src="http://img.shields.io/travis/triAGENS/guacamole.svg" alt="Build Status"></a>
 <a href="https://codeclimate.com/github/triAGENS/guacamole"><img src="http://img.shields.io/codeclimate/github/triAGENS/guacamole.svg" alt="Code Climate"></a>
+<a href="http://inch-ci.org/github/triAGENS/guacamole"><img src="http://inch-ci.org/github/triAGENS/guacamole.svg" alt="Inline docs"></a>
 <a href="https://rubygems.org/gems/guacamole"><img src="http://img.shields.io/gem/v/guacamole.svg" alt="Gem Version"></a></p>
 
 <h1>
@@ -55,7 +56,7 @@
 
 <p>First of all create your shiny new application, without ActiveRecord of course:</p>
 
-<pre lang="shell"><code>rails new -O $my_awesome_app
+<pre lang="shell"><code>rails new --skip-active-record $my_awesome_app
 </code></pre>
 
 <p>Add this line to your application's Gemfile:</p>
@@ -67,6 +68,23 @@
 
 <pre lang="shell"><code>bundle install
 </code></pre>
+
+<h3>
+<a name="adding-guacamole-to-an-existing-rails-application" class="anchor" href="#adding-guacamole-to-an-existing-rails-application"><span class="octicon octicon-link"></span></a>Adding Guacamole to an existing Rails application</h3>
+
+<p>Maybe you're bold and want to add Guacamole to an existing Rails application. In this case some things are different, because you already have an ORM configured. Throughout the remaining README you will find examples of using generators and rake tasks to support you. All the generators must be invoked with the <code>--orm guacamole</code> flag. Without this you will generate both, ActiveRecord and Guacamole files:</p>
+
+<pre lang="shell"><code>bundle exec rails generate model pony name:string birthday:date color:string --orm guacamole
+</code></pre>
+
+<p>Guacamole will not overwrite existing rake tasks and thus you need to invoke them with under the guacamole namespace:</p>
+
+<pre lang="shell"><code>rake db:guacamole:create
+rake db:guacamole:purge
+rake db:guacamole:drop
+</code></pre>
+
+<p>Everything else should work as described in the README. If you encounter any errors while working with an existing Rails application, please let us know.</p>
 
 <h3>
 <a name="configuration" class="anchor" href="#configuration"><span class="octicon octicon-link"></span></a>Configuration</h3>
@@ -86,6 +104,8 @@
   <span class="l-Scalar-Plain">username</span><span class="p-Indicator">:</span> <span class="s">''</span>
   <span class="l-Scalar-Plain">database</span><span class="p-Indicator">:</span> <span class="s">'pony_blog_development'</span>
 </pre></div>
+
+<p><strong>Note</strong>: If you use something like <a href="https://github.com/bkeepers/dotenv">dotenv</a> we will process the config file with ERB before loading the YAML. Another way to configure the database connection is to provide a connection URI like this: <code>http://user:pass@localhost:8529/_db/pony_ville_db</code>. If you don't use authentication, just skip the user/password part. The connection URI must be provided as the environment variable <code>DATABASE_URL</code> and has precedence over the config file.</p>
 
 <p>After you created a configuration file you can create the database as in any other Rails project:</p>
 
@@ -419,6 +439,119 @@
 <span class="c1"># =&gt; Will save both the author and the post</span>
 </pre></div>
 
+<h3>
+<a name="callbacks" class="anchor" href="#callbacks"><span class="octicon octicon-link"></span></a>Callbacks</h3>
+
+<p>Guacamole allows you to define callbacks for various actions performed on a model. Those callbacks need to be defined in a dedicate class per model. For example to hash the password of a user prior creating the document in the database you would write something like the following:</p>
+
+<div class="highlight highlight-ruby"><pre><span class="k">class</span> <span class="nc">UserCallbacks</span>
+  <span class="kp">include</span> <span class="no">Guacamole</span><span class="o">::</span><span class="no">Callbacks</span>
+
+  <span class="n">before_create</span> <span class="ss">:encrypt_password</span>
+
+  <span class="k">def</span> <span class="nf">encrypt_password</span>
+    <span class="n">object</span><span class="o">.</span><span class="n">encrypted_password</span> <span class="o">=</span> <span class="no">BCrypt</span><span class="o">::</span><span class="no">Password</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">object</span><span class="o">.</span><span class="n">password</span><span class="p">)</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</pre></div>
+
+<p>Whenever callbacks needs to be executed for a model we create an instance of the specified callback with that model. You have access to the model via the <code>object</code> method. To specify a callback for a model you must use the <code>callbacks</code> method in that model:</p>
+
+<div class="highlight highlight-ruby"><pre><span class="k">class</span> <span class="nc">User</span>
+  <span class="kp">include</span> <span class="no">Guacamole</span><span class="o">::</span><span class="no">Model</span>
+
+  <span class="n">callbacks</span> <span class="ss">:user_callbacks</span>
+<span class="k">end</span>
+</pre></div>
+
+<p>You can define define callbacks for the following actions:</p>
+
+<ul>
+<li><code>before_validate</code></li>
+<li><code>around_validate</code></li>
+<li><code>after_validate</code></li>
+<li><code>before_save</code></li>
+<li><code>around_save</code></li>
+<li><code>after_save</code></li>
+<li><code>before_create</code></li>
+<li><code>around_create</code></li>
+<li><code>after_create</code></li>
+<li><code>before_update</code></li>
+<li><code>around_update</code></li>
+<li><code>after_update</code></li>
+<li><code>before_delete</code></li>
+<li><code>around_delete</code></li>
+<li><code>after_delete</code></li>
+</ul><p>The order of the callback execution is as follows:</p>
+
+<p><strong>Creating an object</strong></p>
+
+<ul>
+<li><code>before_validation</code></li>
+<li><code>after_validation</code></li>
+<li><code>before_save</code></li>
+<li><code>around_save</code></li>
+<li><code>before_create</code></li>
+<li><code>around_create</code></li>
+<li><code>after_create</code></li>
+<li><code>after_save</code></li>
+</ul><p><strong>Updating an object</strong></p>
+
+<ul>
+<li><code>before_validation</code></li>
+<li><code>after_validation</code></li>
+<li><code>before_save</code></li>
+<li><code>around_save</code></li>
+<li><code>before_update</code></li>
+<li><code>around_update</code></li>
+<li><code>after_update</code></li>
+<li><code>after_save</code></li>
+</ul><p><strong>Destroying an object</strong></p>
+
+<ul>
+<li><code>before_delete</code></li>
+<li><code>around_delete</code></li>
+<li><code>after_delete</code></li>
+</ul><p>The order of the callback execution is as follows:</p>
+
+<p><strong>Creating an object</strong></p>
+
+<ol>
+<li><code>before_validation</code></li>
+<li><code>after_validation</code></li>
+<li><code>before_save</code></li>
+<li><code>around_save</code></li>
+<li><code>before_create</code></li>
+<li><code>around_create</code></li>
+<li><code>after_create</code></li>
+<li><code>after_save</code></li>
+</ol><p><strong>Updating an object</strong></p>
+
+<ol>
+<li><code>before_validation</code></li>
+<li><code>after_validation</code></li>
+<li><code>before_save</code></li>
+<li><code>around_save</code></li>
+<li><code>before_update</code></li>
+<li><code>around_update</code></li>
+<li><code>after_update</code></li>
+<li><code>after_save</code></li>
+</ol><p><strong>Destroying an object</strong></p>
+
+<ol>
+<li><code>before_delete</code></li>
+<li><code>around_delete</code></li>
+<li><code>after_delete</code></li>
+</ol><h4>
+<a name="generator-support" class="anchor" href="#generator-support"><span class="octicon octicon-link"></span></a>Generator Support</h4>
+
+<p>Of course we provide a generator to help you setting the required files up:</p>
+
+<pre lang="shell"><code>rails generate guacamole:callbacks pony
+</code></pre>
+
+<p>This will create the callback file, a test template and adds the appropriate register call to the model file.</p>
+
 <h2>
 <a name="integration-into-the-rails-ecosystem" class="anchor" href="#integration-into-the-rails-ecosystem"><span class="octicon octicon-link"></span></a>Integration into the Rails Ecosystem™</h2>
 
@@ -476,7 +609,7 @@
 <h2>
 <a name="issues-or-questions" class="anchor" href="#issues-or-questions"><span class="octicon octicon-link"></span></a>Issues or Questions</h2>
 
-<p>If you find a bug in this gem, please report it on <a href="https://github.com/triAGENS/guacamole/issues">our tracker</a>. We use <a href="https://waffle.io/triagens/guacamole">Waffle.io</a> to manage the tickets – go there to see the current status of the ticket. If you have a question, just contact us via the <a href="https://groups.google.com/forum/?fromgroups#!forum/ashikawa">mailing list</a> – we are happy to help you <img class="emoji" title=":smile:" alt=":smile:" src="https://github.global.ssl.fastly.net/images/icons/emoji/smile.png" height="20" width="20" align="absmiddle"></p>
+<p>If you find a bug in this gem, please report it on <a href="https://github.com/triAGENS/guacamole/issues">our tracker</a>. We use <a href="https://waffle.io/triagens/guacamole">Waffle.io</a> to manage the tickets – go there to see the current status of the ticket. If you have a question, just contact us via the <a href="https://groups.google.com/forum/?fromgroups#!forum/ashikawa">mailing list</a> – we are happy to help you <img class="emoji" title=":smile:" alt=":smile:" src="https://assets-cdn.github.com/images/icons/emoji/smile.png" height="20" width="20" align="absmiddle"></p>
 
 <h2>
 <a name="contributing" class="anchor" href="#contributing"><span class="octicon octicon-link"></span></a>Contributing</h2>

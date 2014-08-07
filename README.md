@@ -189,7 +189,7 @@ As with the models we provide a generator to help you creating your collection c
 bundle exec rails generate collection ponies
 ```
 
-Currently your options what you can do with a collection are quire limited. We will eventually add more features, but for now you basically have this features:
+Currently your options what you can do with a collection are quite limited. We will eventually add more features, but for now you basically have this features:
 
   * CRUD operations for your models
   * Where the "Read"-part is limited to [Simple Queries](https://www.arangodb.org/manuals/2/SimpleQueries.html). But more on this later.

@@ -12,6 +12,70 @@ module Guacamole
   #
   # @note If you plan to bring your own `DocumentModelMapper` please consider using an {Guacamole::IdentityMap}.
   class DocumentModelMapper
+    # An attribute to encapsulate special mapping
+    class Attribute
+      # The name of the attribute with in the model
+      #
+      # @return [Symbol] The name of the attribute
+      attr_reader :name
+
+      # Additional options to be used for the mapping
+      #
+      # @return [Hash] The mapping options for the attribute
+      attr_reader :options
+
+      # Create a new attribute instance
+      #
+      # You must at least provide the name of the attribute to be mapped and
+      # optionally pass configuration for the mapper when it processes this attribute.
+      #
+      # @param [Symbol] name The name of the attribute
+      # @param [Hash] options Additional options to be passed
+      # @option options [Edge] :via The Edge class this attribute relates to
+      def initialize(name, options = {})
+        @name    = name.to_sym
+        @options = options
+      end
+
+      # The name of the getter for this attribute
+      #
+      # @returns [Symbol] The method name to read this attribute
+      def getter
+        name
+      end
+
+      # The name of the setter for this attribute
+      #
+      # @return [String] The method name to set this attribute
+      def setter
+        "#{name}="
+      end
+
+      # Should this attribute be mapped via an Edge in a Graph?
+      #
+      # @return [Boolean] True if there was an edge class configured
+      def map_via_edge?
+        !!edge_class
+      end
+
+      # The edge class to be used during the mapping process
+      #
+      # @return [Edge] The actual edge class
+      def edge_class
+        options[:via]
+      end
+
+      # To Attribute instances are equal if their name is equal
+      #
+      # @param [Attribute] other The Attribute to compare this one to
+      # @return [Boolean] True if both have the same name
+      def ==(other)
+        other.instance_of?(self.class) &&
+          other.name == self.name
+      end
+      alias_method :eql?, :==
+    end
+
     # The class to map to
     #
     # @return [class] The class to map to
@@ -23,6 +87,11 @@ module Guacamole
     attr_reader :models_to_embed
     attr_reader :referenced_by_models
     attr_reader :referenced_models
+
+    # The list of Attributes to treat specially during the mapping process
+    #
+    # @return [Array<Attribute>] The list of special attributes
+    attr_reader :attributes
 
     # Create a new instance of the mapper
     #
@@ -36,6 +105,7 @@ module Guacamole
       @models_to_embed      = []
       @referenced_by_models = []
       @referenced_models    = []
+      @attributes           = []
     end
 
     class << self
@@ -164,6 +234,37 @@ module Guacamole
 
     def references(model_name)
       @referenced_models << model_name
+    end
+
+    # Mark an attribute of the model to be specially treated during mapping
+    #
+    # @param [Symbol] attribute_name The name of the model attribute
+    # @param [Hash] options Additional options to configure the mapping process
+    # @option options [Edge] :via The Edge class this attribute relates to
+    # @example Define a relation via an Edge in a Graph
+    #   class Authorship
+    #     include Guacamole::Edge
+    #
+    #     from :users
+    #     to :posts
+    #   end
+    #
+    #   class BlogpostsCollection
+    #     include Guacamole::Collection
+    #
+    #     map do
+    #       attribute :author, via: Authorship
+    #     end
+    #   end
+    def attribute(attribute_name, options = {})
+      @attributes << Attribute.new(attribute_name, options)
+    end
+
+    # Returns a list of attributes that have an Edge class configured
+    #
+    # @return [Array<Attribute>] A list of attributes which all have an Edge class
+    def edge_attributes
+      attributes.select(&:map_via_edge?)
     end
 
     private

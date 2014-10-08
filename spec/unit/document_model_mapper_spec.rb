@@ -239,4 +239,53 @@ describe Guacamole::DocumentModelMapper do
       expect(subject.referenced_models).to include :pony
     end
   end
+
+  describe 'attribute' do
+    describe Guacamole::DocumentModelMapper::Attribute do
+      subject { Guacamole::DocumentModelMapper::Attribute.new(:attribute_name) }
+
+      its(:name) { should eq :attribute_name }
+      its(:options) { should eq({}) }
+      its(:getter) { should eq :attribute_name }
+      its(:setter) { should eq 'attribute_name=' }
+
+      context 'attributes for relations' do
+        let(:edge_class) { double('SomeEdgeClass') }
+
+        before do
+          subject.options[:via] = edge_class
+        end
+
+        it 'should know if the attribute must be mapped via an edge' do
+          expect(subject.map_via_edge?).to be_truthy
+        end
+
+        it 'should hold a reference to the edge class' do
+          expect(subject.edge_class).to eq edge_class
+        end
+      end
+    end
+
+    subject { Guacamole::DocumentModelMapper.new FancyModel, FakeIdentityMap }
+
+    it 'should add an attribute to be handled differently during the mapping' do
+      subject.attribute :special_one
+
+      expect(subject.attributes).to include Guacamole::DocumentModelMapper::Attribute.new(:special_one)
+    end
+
+    it 'should hold a list of all attributes to be considered during the mapping' do
+      subject.attribute :some_attribute
+      subject.attribute :another_attribute
+
+      expect(subject.attributes.count).to eq 2
+    end
+
+    it 'should hold a list of all attributes to be mapped via Edges' do
+      subject.attribute :normal_attribute
+      subject.attribute :related_model, via: double('EdgeClass')
+
+      expect(subject.edge_attributes).to include(an_object_having_attributes(name: :related_model))
+    end
+  end
 end

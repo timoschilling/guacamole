@@ -144,18 +144,12 @@ module Guacamole
     #
     # @param [Ashikawa::Core::Document] document
     # @return [Model] the resulting model with the given Model class
-    # rubocop:disable MethodLength
     def document_to_model(document)
       identity_map.retrieve_or_store model_class, document.key do
         model = model_class.new(document.to_h)
 
-        referenced_by_models.each do |ref_model_name|
-          model.send("#{ref_model_name}=", Proxies::ReferencedBy.new(ref_model_name, model))
-        end
-
-        referenced_models.each do |ref_model_name|
-          model.send("#{ref_model_name}=", Proxies::References.new(ref_model_name, document))
-        end
+        handle_referenced_documents(document, model)
+        handle_referenced_by_documents(document, model)
 
         model.key = document.key
         model.rev = document.revision
@@ -163,7 +157,6 @@ module Guacamole
         model
       end
     end
-    # rubocop:enable MethodLength
 
     # Map a model to a document
     #
@@ -171,29 +164,15 @@ module Guacamole
     #
     # @param [Model] model
     # @return [Ashikawa::Core::Document] the resulting document
-    # rubocop:disable MethodLength
     def model_to_document(model)
       document = model.attributes.dup.except(:key, :rev)
-      models_to_embed.each do |attribute_name|
-        document[attribute_name] = model.send(attribute_name).map do |embedded_model|
-          embedded_model.attributes.except(:key, :rev)
-        end
-      end
 
-      referenced_models.each do |ref_model_name|
-        ref_key = [ref_model_name.to_s, 'id'].join('_').to_sym
-        ref_model = model.send ref_model_name
-        document[ref_key] = ref_model.key if ref_model
-        document.delete(ref_model_name)
-      end
-
-      referenced_by_models.each do |ref_model_name|
-        document.delete(ref_model_name)
-      end
+      handle_embedded_models(model, document)
+      handle_referenced_models(model, document)
+      handle_referenced_by_models(model, document)
 
       document
     end
-    # rubocop:enable MethodLength
 
     # Declare a model to be embedded
     #
@@ -271,6 +250,41 @@ module Guacamole
 
     def identity_map
       @identity_map
+    end
+
+    def handle_embedded_models(model, document)
+      models_to_embed.each do |attribute_name|
+        document[attribute_name] = model.send(attribute_name).map do |embedded_model|
+          embedded_model.attributes.except(:key, :rev)
+        end
+      end
+    end
+
+    def handle_referenced_models(model, document)
+      referenced_models.each do |ref_model_name|
+        ref_key = [ref_model_name.to_s, 'id'].join('_').to_sym
+        ref_model = model.send ref_model_name
+        document[ref_key] = ref_model.key if ref_model
+        document.delete(ref_model_name)
+      end
+    end
+
+    def handle_referenced_by_models(model, document)
+      referenced_by_models.each do |ref_model_name|
+        document.delete(ref_model_name)
+      end
+    end
+
+    def handle_referenced_documents(document, model)
+      referenced_models.each do |ref_model_name|
+        model.send("#{ref_model_name}=", Proxies::References.new(ref_model_name, document))
+      end
+    end
+
+    def handle_referenced_by_documents(document, model)
+      referenced_by_models.each do |ref_model_name|
+        model.send("#{ref_model_name}=", Proxies::ReferencedBy.new(ref_model_name, model))
+      end
     end
   end
 end

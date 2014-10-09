@@ -172,6 +172,7 @@ module Guacamole
       handle_embedded_models(model, document)
       handle_referenced_models(model, document)
       handle_referenced_by_models(model, document)
+      handle_related_models(model, document)
 
       document
     end
@@ -274,6 +275,12 @@ module Guacamole
     def handle_referenced_by_models(model, document)
       referenced_by_models.each do |ref_model_name|
         document.delete(ref_model_name)
+      end
+    end
+
+    def handle_related_models(model, document)
+      edge_attributes.each do |edge_attribute|
+        document.delete(edge_attribute.name)
       end
     end
 

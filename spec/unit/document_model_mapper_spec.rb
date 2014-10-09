@@ -136,9 +136,6 @@ describe Guacamole::DocumentModelMapper do
 
         subject.document_to_model document
       end
-      # TODO
-      # * Introduce a new proxy to realize the `neighbors` function.
-      # * This will require a new type of Query: GraphQuery to inject the Mapper into the Cursor iteration
     end
 
     context 'with embedded ponies' do
@@ -243,11 +240,17 @@ describe Guacamole::DocumentModelMapper do
     end
 
     context 'with attributes as edge relations' do
-      # TODO
-      # * The Mapper have only to remove those attributes from the document
-      # * The Collection needs to take care of persisting the resulting edge documents
-      #   * This will include creating edges, updating and removing them
-      # * At some point the Graph, the EdgeDefinitions and the intermediate EdgeCollection classes need to be created o_O
+      let(:attribute_with_edge_relation) { instance_double('Guacamole::DocumentModelMapper::Attribute', name: 'my_relation') }
+
+      before do
+        allow(subject).to receive(:edge_attributes).and_return([attribute_with_edge_relation])
+      end
+
+      it 'should remove the attributes from the document' do
+        expect(model_attributes).to receive(:delete).with('my_relation')
+
+        subject.model_to_document(model)
+      end
     end
   end
 

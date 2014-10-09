@@ -2,6 +2,7 @@
 
 require 'guacamole/proxies/referenced_by'
 require 'guacamole/proxies/references'
+require 'guacamole/proxies/relation'
 
 module Guacamole
   # This is the default mapper class to map between Ashikawa::Core::Document and
@@ -150,6 +151,7 @@ module Guacamole
 
         handle_referenced_documents(document, model)
         handle_referenced_by_documents(document, model)
+        handle_related_documents(document, model)
 
         model.key = document.key
         model.rev = document.revision
@@ -284,6 +286,12 @@ module Guacamole
     def handle_referenced_by_documents(document, model)
       referenced_by_models.each do |ref_model_name|
         model.send("#{ref_model_name}=", Proxies::ReferencedBy.new(ref_model_name, model))
+      end
+    end
+
+    def handle_related_documents(document, model)
+      edge_attributes.each do |edge_attribute|
+        model.send(edge_attribute.setter, Proxies::Relation.new(model, edge_attribute.edge_class))
       end
     end
   end

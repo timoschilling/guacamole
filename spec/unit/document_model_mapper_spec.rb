@@ -108,6 +108,39 @@ describe Guacamole::DocumentModelMapper do
       end
     end
 
+    context 'with attributes as edge relations' do
+      let(:attribute_with_edge_relation) { instance_double('Guacamole::DocumentModelMapper::Attribute', name: 'my_relation') }
+      let(:related_edge_class) { instance_double('Guacamole::Edge') }
+      let(:relation_proxy_class) { Guacamole::Proxies::Relation }
+      let(:relation_proxy) { instance_double('Guacamole::Proxies::Relation') }
+
+      before do
+        allow(attribute_with_edge_relation).to receive(:setter).and_return('my_relation=')
+        allow(attribute_with_edge_relation).to receive(:edge_class).and_return(related_edge_class)
+        allow(subject).to receive(:edge_attributes).and_return([attribute_with_edge_relation])
+        allow(relation_proxy_class).to receive(:new)
+          .with(model_instance, related_edge_class)
+          .and_return(relation_proxy)
+      end
+
+      it 'should initialize a relation proxy with the model and the appropriate edge class' do
+        expect(relation_proxy_class).to receive(:new)
+          .with(model_instance, related_edge_class)
+          .and_return(relation_proxy)
+
+        subject.document_to_model document
+      end
+
+      it 'should assign the relation proxy for the appropriate attribute' do
+        expect(model_instance).to receive(:my_relation=).with(relation_proxy)
+
+        subject.document_to_model document
+      end
+      # TODO
+      # * Introduce a new proxy to realize the `neighbors` function.
+      # * This will require a new type of Query: GraphQuery to inject the Mapper into the Cursor iteration
+    end
+
     context 'with embedded ponies' do
       # This is handled by Virtus, we just need to provide a hash
       # and the coercing will be taken care of by Virtus
@@ -207,6 +240,14 @@ describe Guacamole::DocumentModelMapper do
 
         subject.model_to_document(model)
       end
+    end
+
+    context 'with attributes as edge relations' do
+      # TODO
+      # * The Mapper have only to remove those attributes from the document
+      # * The Collection needs to take care of persisting the resulting edge documents
+      #   * This will include creating edges, updating and removing them
+      # * At some point the Graph, the EdgeDefinitions and the intermediate EdgeCollection classes need to be created o_O
     end
   end
 

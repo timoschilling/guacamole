@@ -71,7 +71,7 @@ module Guacamole
   class Configuration
     # A wrapper object to handle both configuration from a connection URI and a hash.
     class ConfigStruct
-      attr_reader :url, :username, :password, :database
+      attr_reader :url, :username, :password, :database, :graph
 
       def initialize(config_hash_or_url)
         case config_hash_or_url
@@ -98,6 +98,7 @@ module Guacamole
         @username = hash['username']
         @password = hash['password']
         @database = hash['database']
+        @graph    = hash['graph']
         @url      = "#{hash['protocol']}://#{hash['host']}:#{hash['port']}"
       end
     end
@@ -121,14 +122,57 @@ module Guacamole
         configuration.logger ||= (rails_logger || default_logger)
       end
 
+      # Returns the graph associated with this Guacamole application.
+      #
+      # You can create more graphs by interacting with the database instance directly. This is just the main graph
+      # that will be used to realize relations between models. The default name will be generated based on some
+      # environment information. To set a custom name use the `graph_name` option when configure your connection.
+      #
+      # @return [Graph] The graph to be used internally to handle relations
+      def graph
+        database.graph(graph_name)
+      end
+
+      # Sets a custom name for the internally used graph
+      #
+      # @param [String] graph_name The name of the graph to be used
+      def graph_name=(graph_name)
+        @graph_name = graph_name
+      end
+
+      # The name of the graph to be used internally.
+      #
+      # Determining the name of the graph will go through the following steps:
+      #
+      # 1. Use the manually set `graph_name`
+      # 2. Use the ENV variable `GUACAMOLE_GRAPH` if present.
+      #    This is useful if you configure the application with ENV variables.
+      # 3. If a Rails context was found it will use the name of the application with a `_graph` suffix
+      # 4. If none of the above matched it will use the database name with a `_graph` suffix
+      #
+      # @return [String] The name of the graph to be used
+      def graph_name
+        return @graph_name if @graph_name
+        return ENV['GUACAMOLE_GRAPH'] if ENV['GUACAMOLE_GRAPH']
+
+        base_name = if Module.const_defined?('Rails')
+                      Rails.application.class.name.deconstantize.underscore
+                    else
+                      database.name
+                    end
+
+        [base_name, 'graph'].join('_')
+      end
+
       # Load a YAML configuration file to configure Guacamole
       #
       # @param [String] file_name The file name of the configuration
       def load(file_name)
-        yaml_content  = process_file_with_erb(file_name)
-        config        = YAML.load(yaml_content)[current_environment.to_s]
+        yaml_content    = process_file_with_erb(file_name)
+        config          = build_config(YAML.load(yaml_content)[current_environment.to_s])
+        self.graph_name = config.graph
 
-        create_database_connection(build_config(config))
+        create_database_connection(config)
         warn_if_database_was_not_yet_created
       end
 

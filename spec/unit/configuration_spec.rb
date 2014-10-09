@@ -81,6 +81,57 @@ describe Guacamole::Configuration do
     end
   end
 
+  describe 'graph' do
+    let(:database) { instance_double('Ashikawa::Core::Database') }
+    let(:graph) { instance_double('Ashikawa::Core::Graph') }
+    let(:graph_name) { 'my-amazing-graph' }
+
+    before do
+      subject.graph_name = nil
+      allow(subject).to receive(:database).and_return(database)
+      allow(database).to receive(:graph).with(graph_name).and_return(graph)
+    end
+
+    it 'should allow access to the associated graph based on the graph_name attribute' do
+      allow(subject).to receive(:graph_name).and_return(graph_name)
+
+      expect(subject.graph).to eq graph
+    end
+
+    context 'configure the graph name' do
+      context 'within a Rails application' do
+        let(:rails_module) { double('Rails') }
+        let(:application_class) { double('ApplicationClass', name: 'MyAwesomeApp::Application') }
+        let(:rails_application) { double('MyAwesomeApp::Application', class: application_class) }
+
+        before do
+          allow(rails_module).to receive(:application).and_return(rails_application)
+          stub_const('Rails', rails_module)
+        end
+
+        its(:graph_name) { should eq 'my_awesome_app_graph' }
+      end
+
+      it 'should be generated based on the current database name' do
+        allow(database).to receive(:name).and_return('my_database')
+
+        expect(subject.graph_name).to eq 'my_database_graph'
+      end
+
+      it 'should use a custom set graph name' do
+        subject.graph_name = 'fabulous_graph'
+
+        expect(subject.graph_name).to eq 'fabulous_graph'
+      end
+
+      it 'should take the graph name from the ENV' do
+        allow(ENV).to receive(:[]).with('GUACAMOLE_GRAPH').and_return('graph_from_env')
+
+        expect(subject.graph_name).to eq 'graph_from_env'
+      end
+    end
+  end
+
   describe 'build_config' do
     context 'from a hash' do
       let(:config_hash) do
@@ -90,47 +141,29 @@ describe Guacamole::Configuration do
           'port'     => 8529,
           'username' => 'username',
           'password' => 'password',
-          'database' => 'awesome_db'
+          'database' => 'awesome_db',
+          'graph'    => 'custom_graph'
         }
       end
-      let(:config_struct) { subject.build_config(config_hash) }
 
-      it 'should create a struct with a database URL' do
-        expect(config_struct.url).to eq 'http://localhost:8529'
-      end
+      subject { Guacamole::Configuration.build_config(config_hash) }
 
-      it 'should create a struct with a username' do
-        expect(config_struct.username).to eq 'username'
-      end
-
-      it 'should create a struct with password' do
-        expect(config_struct.password).to eq 'password'
-      end
-
-      it 'should create a struct with database' do
-        expect(config_struct.database).to eq 'awesome_db'
-      end
+      its(:url)      { should eq 'http://localhost:8529' }
+      its(:username) { should eq 'username' }
+      its(:password) { should eq 'password' }
+      its(:database) { should eq 'awesome_db' }
+      its(:graph)    { should eq 'custom_graph' }
     end
 
     context 'from a URL' do
       let(:database_url) { 'http://username:password@localhost:8529/_db/awesome_db' }
-      let(:config_struct) { subject.build_config(database_url) }
 
-      it 'should create a struct with a database URL' do
-        expect(config_struct.url).to eq 'http://localhost:8529'
-      end
+      subject { Guacamole::Configuration.build_config(database_url) }
 
-      it 'should create a struct with a username' do
-        expect(config_struct.username).to eq 'username'
-      end
-
-      it 'should create a struct with password' do
-        expect(config_struct.password).to eq 'password'
-      end
-
-      it 'should create a struct with database' do
-        expect(config_struct.database).to eq 'awesome_db'
-      end
+      its(:url)      { should eq 'http://localhost:8529' }
+      its(:username) { should eq 'username' }
+      its(:password) { should eq 'password' }
+      its(:database) { should eq 'awesome_db' }
     end
   end
 
@@ -173,13 +206,14 @@ describe Guacamole::Configuration do
     let(:current_environment) { 'development' }
 
     before do
-      allow(subject).to receive(:current_environment).and_return(current_environment)
-      allow(subject).to receive(:warn_if_database_was_not_yet_created)
-      allow(subject).to receive(:create_database_connection)
-      allow(subject).to receive(:process_file_with_erb).with('config_file.yml')
-      allow(subject).to receive(:build_config).and_return(config_struct)
-      allow(config).to  receive(:[]).with('development').and_return(env_config)
-      allow(YAML).to    receive(:load).and_return(config)
+      allow(subject).to       receive(:current_environment).and_return(current_environment)
+      allow(subject).to       receive(:warn_if_database_was_not_yet_created)
+      allow(subject).to       receive(:create_database_connection)
+      allow(subject).to       receive(:process_file_with_erb).with('config_file.yml')
+      allow(subject).to       receive(:build_config).and_return(config_struct)
+      allow(config).to        receive(:[]).with('development').and_return(env_config)
+      allow(config_struct).to receive(:graph).and_return('custom_graph_name')
+      allow(YAML).to          receive(:load).and_return(config)
     end
 
     it 'should parse a YAML configuration' do
@@ -202,6 +236,12 @@ describe Guacamole::Configuration do
 
     it 'should create the database connection with a config struct' do
       expect(subject).to receive(:create_database_connection).with(config_struct)
+
+      subject.load 'config_file.yml'
+    end
+
+    it 'should set the graph name as read from the YAML file' do
+      expect(subject).to receive(:graph_name=).with('custom_graph_name')
 
       subject.load 'config_file.yml'
     end

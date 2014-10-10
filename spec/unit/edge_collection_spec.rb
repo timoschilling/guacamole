@@ -3,7 +3,11 @@
 require 'spec_helper'
 require 'guacamole/edge_collection'
 
-class SomeEdgeCollection
+# Acts a stand in for the edge class
+class SomeEdge
+end
+
+class SomeEdgesCollection
   include Guacamole::EdgeCollection
 end
 
@@ -53,10 +57,35 @@ describe Guacamole::EdgeCollection do
   end
 
   context 'concrete edge collections' do
-    subject { SomeEdgeCollection }
+    subject { SomeEdgesCollection }
+
+    let(:database)     { double('Database') }
+    let(:graph) { double('Graph') }
+    let(:edge_collection_name) { 'some_edges' }
+    let(:raw_edge_collection) { double('Ashikawa::Core::EdgeCollection') }
+    let(:config)       { double('Configuration') }
+
+    before do
+      allow(Guacamole).to receive(:configuration).and_return(config)
+      allow(config).to receive(:graph).and_return(graph)
+      allow(graph).to receive(:edge_collection).with(edge_collection_name).and_return(raw_edge_collection)
+      allow(subject).to receive(:database).and_return(database)
+    end
+
+    its(:edge_class) { should eq SomeEdge }
+    its(:graph)      { should eq graph }
 
     it 'should be a specialized Guacamole::Collection' do
       expect(subject).to include Guacamole::Collection 
     end
+
+    it 'should map the #connectino to the underlying edge_connection' do
+      allow(subject).to receive(:graph).and_return(graph)
+      
+      expect(subject.connection).to eq raw_edge_collection
+    end
+
+    it 'should create the edge definition'
+    it 'should provide a #neighbors function'
   end
 end

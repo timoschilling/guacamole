@@ -29,5 +29,20 @@ module Guacamole
         Object.const_set(collection_name, new_collection_class)
       end
     end
+
+    module ClassMethods
+      def graph
+        @graph ||= Guacamole.configuration.graph
+      end
+
+      def connection
+        @connection ||= graph.edge_collection(collection_name)
+      end
+
+
+      def edge_class
+        @edge_class ||= model_class
+      end
+    end 
   end
 end

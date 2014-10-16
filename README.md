@@ -3,6 +3,7 @@
 [![Code Climate](http://img.shields.io/codeclimate/github/triAGENS/guacamole.svg)](https://codeclimate.com/github/triAGENS/guacamole)
 [![Inline docs](http://inch-ci.org/github/triAGENS/guacamole.svg)](http://inch-ci.org/github/triAGENS/guacamole)
 [![Gem Version](http://img.shields.io/gem/v/guacamole.svg)](https://rubygems.org/gems/guacamole)
+[![Codeship Status](https://codeship.io/projects/a30d6040-350a-0132-1102-3e0229153f11/status)](https://codeship.io/projects/40903)
 
 # Guacamole
 

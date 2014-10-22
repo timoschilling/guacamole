@@ -46,6 +46,10 @@ module Guacamole
                                   from: [edge_class.from],
                                   to: [edge_class.to])
       end
+
+      def neighbors(model)
+        graph.neighbors(model, edges: collection_name)
+      end
     end 
 
     included do

@@ -27,7 +27,7 @@ describe Guacamole::Proxies::Relation do
 
     it 'should call the #neigbors method on the appropriate edge collection' do
       expect(responsible_edge_collection).to receive(:neighbors)
-        .with(model, edges: edge_collection_name)
+        .with(model)
 
       subject.to_a
     end

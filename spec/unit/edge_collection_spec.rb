@@ -3,11 +3,6 @@
 require 'spec_helper'
 require 'guacamole/edge_collection'
 
-# /// What do we need?
-#
-# 2. Each EachCollection needs the following features
-#   * Provide access to graph functions provided by Ashikawa::Core (i.e. Neighbors function)
-
 describe Guacamole::EdgeCollection do
   let(:graph)  { double('Graph') }
 # /// What do we need?
@@ -79,6 +74,7 @@ describe Guacamole::EdgeCollection do
     let(:collection_a) { :a }
     let(:collection_b) { :b }
     let(:edge_class) { double('EdgeClass', name: 'SomeEdge', from: collection_a, to: collection_b)}
+    let(:model) { double('Model') }
 
     before do
       stub_const('SomeEdge', edge_class)
@@ -121,6 +117,10 @@ describe Guacamole::EdgeCollection do
       end
     end
 
-    it 'should provide a #neighbors function'
+    it 'should provide a #neighbors function' do
+      expect(graph).to receive(:neighbors).with(model, edges: 'some_edges')
+      
+      subject.neighbors(model)
+    end
   end
 end

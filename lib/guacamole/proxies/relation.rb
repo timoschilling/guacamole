@@ -9,8 +9,7 @@ module Guacamole
       def initialize(model, edge_class)
         responsible_edge_collection = EdgeCollection.for(edge_class)
 
-        init model,
-             -> () { responsible_edge_collection.neighbors(model, edges: responsible_edge_collection.collection_name) }
+        init model, -> () { responsible_edge_collection.neighbors(model) }
       end
     end
   end

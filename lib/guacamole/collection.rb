@@ -34,7 +34,7 @@ module Guacamole
       def_delegators :mapper, :model_to_document
       def_delegator :connection, :fetch, :fetch_document
 
-      attr_accessor :connection, :mapper, :database
+      attr_accessor :connection, :mapper, :database, :graph
 
       # The raw `Database` object that was configured
       #
@@ -47,18 +47,30 @@ module Guacamole
         @database ||= Guacamole.configuration.database
       end
 
+      # The application graph to be used
+      #
+      # This is quite important since we're using the Graph module to realize relations
+      # between models. To guarantee consistency of your data all requests must be routed
+      # through the graph module.
+      #
+      # @see http://rubydoc.info/gems/ashikawa-core/Ashikawa/Core/Graph
+      # @return [Ashikawa::Core::Graph]
+      def graph
+        @graph ||= Guacamole.configuration.graph
+      end
+
       # The raw `Collection` object for this collection
       #
       # You can use this method for low level communication with the collection.
       # Details can be found in the Ashikawa::Core documentation.
       #
-      # @note We're well aware that we return a Ashikawa::Core::Collection here
+      # @note We're well aware that we return a Ashikawa::Core::VertecCollection here
       #       but naming it a connection. We think the name `connection` still
       #       fits better in this context.
-      # @see http://rubydoc.info/gems/ashikawa-core/Ashikawa/Core/Collection
-      # @return [Ashikawa::Core::Collection]
+      # @see http://rubydoc.info/gems/ashikawa-core/Ashikawa/Core/VertexCollection
+      # @return [Ashikawa::Core::VertexCollection]
       def connection
-        @connection ||= database[collection_name]
+        @connection ||= graph.add_vertex_collection(collection_name)
       end
 
       # The DocumentModelMapper for this collection

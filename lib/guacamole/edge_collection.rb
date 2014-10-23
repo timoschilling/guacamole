@@ -30,10 +30,6 @@ module Guacamole
     end
 
     module ClassMethods
-      def graph
-        @graph ||= Guacamole.configuration.graph
-      end
-
       def connection
         @connection ||= graph.edge_collection(collection_name)
       end

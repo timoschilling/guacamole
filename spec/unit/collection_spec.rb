@@ -69,16 +69,31 @@ describe Guacamole::Collection do
     end
   end
 
-  describe 'connection' do
+  describe 'graph' do
     before do
-      subject.connection = nil
+      subject.graph = nil
     end
 
-    it 'should default to the collection "collection_name" in the database' do
-      database = double('Database')
-      allow(subject).to receive(:database).and_return(database)
+    it 'should default to Guacamole.configuration.graph' do
+      default_graph = double('Graph')
+      configuration = double('Configuration', graph: default_graph)
+      allow(Guacamole).to receive(:configuration).and_return(configuration)
 
-      expect(database).to receive(:[]).with(subject.collection_name)
+      expect(subject.graph).to eq default_graph
+    end
+  end
+
+  describe 'connection' do
+    let(:graph) { double('Graph') }
+    let(:vertex_collection) { double('VertexCollection') }
+
+    before do
+      subject.connection = nil
+      allow(subject).to receive(:graph).and_return(graph)
+    end
+
+    it 'should be fetched through the #graph and default to "collection_name"' do
+      expect(graph).to receive(:add_vertex_collection).with(subject.collection_name)
 
       subject.connection
     end

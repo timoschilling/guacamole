@@ -90,7 +90,6 @@ describe Guacamole::EdgeCollection do
     end
 
     its(:edge_class) { should eq edge_class }
-    its(:graph)      { should eq graph }
 
     it 'should be a specialized Guacamole::Collection' do
       expect(subject).to include Guacamole::Collection 

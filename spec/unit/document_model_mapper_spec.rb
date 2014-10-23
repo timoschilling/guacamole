@@ -22,6 +22,22 @@ describe Guacamole::DocumentModelMapper do
     expect(mapper.model_class).to eq FancyModel
   end
 
+  context 'document mapper instance' do
+    subject { Guacamole::DocumentModelMapper.new FancyModel, FakeIdentityMap }
+
+    let(:model) { double('Model') }
+    let(:model_class) { double('ModelClass') }
+
+    before do
+      allow(subject).to receive(:model_class).and_return(model_class)
+      allow(model).to receive(:instance_of?).with(model_class).and_return(true)
+    end
+
+    it 'should know if it responsible for a certain model' do
+      expect(subject.responsible_for?(model)).to be_truthy
+    end
+  end 
+
   describe 'document_to_model' do
     subject { Guacamole::DocumentModelMapper.new FancyModel, FakeIdentityMap }
 

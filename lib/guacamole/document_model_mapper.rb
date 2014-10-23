@@ -249,6 +249,14 @@ module Guacamole
       attributes.select(&:map_via_edge?)
     end
 
+    # Is this Mapper instance responsible for mapping the given model
+    #
+    # @param [Model] model The model to check against
+    # @return [Boolean] True if the given model is an instance of #model_class. False if not.
+    def responsible_for?(model)
+      model.instance_of?(model_class)
+    end
+
     private
 
     def identity_map

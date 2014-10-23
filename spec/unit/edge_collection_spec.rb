@@ -109,6 +109,12 @@ describe Guacamole::EdgeCollection do
 
         just_another_edge_collection.send(:include, Guacamole::EdgeCollection)
       end
+
+      it 'should ignore if the the edge definition was already added' do
+        expect(graph).to receive(:add_edge_definition).and_raise(Ashikawa::Core::ResourceNotFound)
+
+        expect { subject.add_edge_definition_to_graph }.not_to raise_error
+      end
       
       it 'should create the edge definition based on the edge class' do
         expect(graph).to receive(:add_edge_definition).with(edge_collection_name, from: [collection_a], to: [collection_b])

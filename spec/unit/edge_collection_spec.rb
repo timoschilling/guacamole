@@ -117,10 +117,57 @@ describe Guacamole::EdgeCollection do
       end
     end
 
-    it 'should provide a #neighbors function' do
-      expect(graph).to receive(:neighbors).with(model, edges: 'some_edges')
-      
-      subject.neighbors(model)
+    context 'accessing the mapper' do
+      let(:collection_a) { double('Collection') }
+      let(:collection_b) { double('Collection') }
+      let(:mapper_a) { double('DocumentModelMapper') }
+      let(:mapper_b)  { double('DocumentModelMapper') }
+
+      before do
+        allow(collection_a).to receive(:mapper).and_return(mapper_a)
+        allow(collection_b).to receive(:mapper).and_return(mapper_b)
+        allow(edge_class).to receive(:from_collection).and_return(collection_a)
+        allow(edge_class).to receive(:to_collection).and_return(collection_b)
+        allow(mapper_a).to receive(:responsible_for?).with(model).and_return(true)
+        allow(mapper_b).to receive(:responsible_for?).with(model).and_return(false)
+      end
+
+      it 'should provide a method to get the mapper for the :to collection' do
+        expect(subject.mapper_for_target(model)).to eq mapper_b
+      end
+
+      it 'should provide a method to get the mapper for the :from collection' do
+        expect(subject.mapper_for_start(model)).to eq mapper_a
+      end
+    end
+
+    context 'getting neighbors' do
+      let(:graph_query) { instance_double('Guacamole::GraphQuery') }
+      let(:target_mapper) { double('DocumentModelMapper') }
+
+      before do
+        allow(Guacamole::GraphQuery).to receive(:new).and_return(graph_query)
+        allow(subject).to receive(:mapper_for_target).with(model).and_return(target_mapper)
+        allow(graph_query).to receive(:neighbors).and_return(graph_query)
+      end
+
+      it 'should return a query object' do
+        query = subject.neighbors(model)
+
+        expect(query).to eq graph_query
+      end
+
+      it 'should initialize the query object with the graph an the appropriate mapper' do
+        expect(Guacamole::GraphQuery).to receive(:new).with(graph, target_mapper).and_return(graph_query)
+
+        subject.neighbors(model)
+      end
+
+      it 'should provide a #neighbors function' do
+        expect(graph_query).to receive(:neighbors).with(model, 'some_edges')
+        
+        subject.neighbors(model)
+      end
     end
   end
 end

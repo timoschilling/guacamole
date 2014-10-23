@@ -1,6 +1,7 @@
 # -*- encoding : utf-8 -*-
 
 require 'guacamole/collection'
+require 'guacamole/graph_query'
 
 require 'ashikawa-core'
 require 'active_support'
@@ -45,10 +46,25 @@ module Guacamole
         graph.add_edge_definition(collection_name,
                                   from: [edge_class.from],
                                   to: [edge_class.to])
+      rescue
+        # TODO: This case needs to be handled: Definition was already added to graph
       end
 
       def neighbors(model)
-        graph.neighbors(model, edges: collection_name)
+        query = GraphQuery.new(graph, mapper_for_target(model))
+        query.neighbors(model, collection_name)
+      end
+
+      def mapper_for_target(model)
+        vertex_mapper.find { |mapper| !mapper.responsible_for?(model) }
+      end
+
+      def mapper_for_start(model)
+        vertex_mapper.find { |mapper| mapper.responsible_for?(model) }
+      end
+
+      def vertex_mapper
+        [edge_class.from_collection, edge_class.to_collection].map(&:mapper)
       end
     end 
 

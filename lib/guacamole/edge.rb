@@ -61,6 +61,14 @@ module Guacamole
           @to = collection_name
         end
       end
+
+      def to_collection
+        [to.to_s.camelcase, 'Collection'].join('').constantize
+      end
+
+      def from_collection
+        [from.to_s.camelcase, 'Collection'].join('').constantize
+      end
     end
   end
 end

@@ -1,7 +1,5 @@
 # -*- encoding : utf-8 -*-
 
-require 'guacamole/proxies/referenced_by'
-require 'guacamole/proxies/references'
 require 'guacamole/proxies/relation'
 
 module Guacamole
@@ -86,8 +84,6 @@ module Guacamole
     #
     # @return [Array] An array of embedded models
     attr_reader :models_to_embed
-    attr_reader :referenced_by_models
-    attr_reader :referenced_models
 
     # The list of Attributes to treat specially during the mapping process
     #
@@ -104,8 +100,6 @@ module Guacamole
       @model_class          = model_class
       @identity_map         = identity_map
       @models_to_embed      = []
-      @referenced_by_models = []
-      @referenced_models    = []
       @attributes           = []
     end
 
@@ -149,8 +143,6 @@ module Guacamole
       identity_map.retrieve_or_store model_class, document.key do
         model = model_class.new(document.to_h)
 
-        handle_referenced_documents(document, model)
-        handle_referenced_by_documents(document, model)
         handle_related_documents(document, model)
 
         model.key = document.key
@@ -170,8 +162,6 @@ module Guacamole
       document = model.attributes.dup.except(:key, :rev)
 
       handle_embedded_models(model, document)
-      handle_referenced_models(model, document)
-      handle_referenced_by_models(model, document)
       handle_related_models(model, document)
 
       document
@@ -208,14 +198,6 @@ module Guacamole
     #   p blogpost.comments #=> An Array of Comments
     def embeds(model_name)
       @models_to_embed << model_name
-    end
-
-    def referenced_by(model_name)
-      @referenced_by_models << model_name
-    end
-
-    def references(model_name)
-      @referenced_models << model_name
     end
 
     # Mark an attribute of the model to be specially treated during mapping
@@ -271,36 +253,9 @@ module Guacamole
       end
     end
 
-    def handle_referenced_models(model, document)
-      referenced_models.each do |ref_model_name|
-        ref_key = [ref_model_name.to_s, 'id'].join('_').to_sym
-        ref_model = model.send ref_model_name
-        document[ref_key] = ref_model.key if ref_model
-        document.delete(ref_model_name)
-      end
-    end
-
-    def handle_referenced_by_models(model, document)
-      referenced_by_models.each do |ref_model_name|
-        document.delete(ref_model_name)
-      end
-    end
-
     def handle_related_models(model, document)
       edge_attributes.each do |edge_attribute|
         document.delete(edge_attribute.name)
-      end
-    end
-
-    def handle_referenced_documents(document, model)
-      referenced_models.each do |ref_model_name|
-        model.send("#{ref_model_name}=", Proxies::References.new(ref_model_name, document))
-      end
-    end
-
-    def handle_referenced_by_documents(document, model)
-      referenced_by_models.each do |ref_model_name|
-        model.send("#{ref_model_name}=", Proxies::ReferencedBy.new(ref_model_name, model))
       end
     end
 

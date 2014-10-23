@@ -285,54 +285,12 @@ module Guacamole
       #       persisted. In future versions we should add something like `:autosave`
       #       to always save associated models.
       def create_document_from(model)
-        create_referenced_models_of model
-
         document = connection.create_document(model_to_document(model))
 
         model.key = document.key
         model.rev = document.revision
 
-        create_referenced_by_models_of model
-
         document
-      end
-
-      # Creates all not yet persisted referenced models of `model`
-      #
-      # Referenced models needs to be created before the parent model, because it needs their `key`
-      #
-      # @api private
-      # @todo This method should be considered 'work in progress'. We already know we need to change this.
-      # @return [void]
-      def create_referenced_models_of(model)
-        mapper.referenced_models.each do |ref_model_name|
-          ref_collection = mapper.collection_for(ref_model_name)
-
-          ref_model = model.send(ref_model_name)
-          next unless ref_model
-
-          ref_collection.save ref_model unless ref_model.persisted?
-        end
-      end
-
-      # Creates all not yet persisted models which are referenced by `model`
-      #
-      # Referenced by models needs to created after the parent model, because they need its `key`
-      #
-      # @api private
-      # @todo This method should be considered 'work in progress'. We already know we need to change this.
-      # @return [void]
-      def create_referenced_by_models_of(model)
-        mapper.referenced_by_models.each do |ref_model_name|
-          ref_collection = mapper.collection_for(ref_model_name)
-
-          ref_models = model.send(ref_model_name)
-
-          ref_models.each do |ref_model|
-            ref_model.send("#{model.class.name.demodulize.underscore}=", model)
-            ref_collection.save ref_model unless ref_model.persisted?
-          end
-        end
       end
 
       # Replace a document in the database with this model

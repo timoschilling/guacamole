@@ -296,6 +296,7 @@ Currently there is no option to change the mapping of attributes. If you want to
 
 #### Associations
 
+**TODO: This needs some work to include relations**
 Besides simple attributes we want to handle associations between models. To add an association between your models you have two options: __embedded__ and __referenced__.
 
 #### Embedded references
@@ -354,67 +355,9 @@ As you can see, from the model perspective there is nothing special about an emb
 
 **Note**: Again this will only work if you stick with the convention. So far there is no support to configure this more fine grained.
 
-#### References
+### Relations
 
-While there are perfect use cases to embed documents into each other there are still plenty of use cases where referencing documents makes perfect sense. In fact this one feature where ArangoDB can really shine: Instead of just getting all referenced documents with dedicated calls to the server and without the possibility to perform any functions like filtering or sorting the data, ArangoDB can perform joins over your data just like a RDBMS.
-
-**Note**: In the current version we're not using this power since we need to support AQL before that. As of now references are realized with dedicated calls to the database.
-
-To define references between models you just add the appropriate attributes to the `Model` classes:
-
-```ruby
-class Author
-  include Guacamole::Model
-
-  attribute :name, String
-  attribute :posts, Array[Post]
-end
-
-class Post
-  include Guacamole::Model
-
-  attribute :title, String
-  attribute :author, Author
-end
-```
-
-As with the embedded models the real work happens in the `Collection` classes:
-
-```ruby
-class AuthorsCollection
-  include Guacamole::Collection
-
-  map do
-    referenced_by :posts
-  end
-end
-
-class PostsCollection
-  include Guacamole::Collection
-
-  map do
-    references :author
-  end
-end
-```
-
-Under the hood we will add an `author_id` to all posts holding the reference to the author. As a user this will be completely transparent for you:
-
-```ruby
-author = AuthorsCollection.by_key "23124"
-author.posts
-# => [#<Post:0x12341 …>, …]
-```
-
-The same goes for saving the data. Just add `Post`s to an `Author` as you would in plain Ruby. Passing one of the models to its `Collection` class will take care of the rest:
-
-```ruby
-author = Author.new(name: "Lauren Faust")
-author.posts << Post.new(title: "This is amazing")
-
-AuthorsCollection.save author
-# => Will save both the author and the post
-```
+**>>>> Insert documentation for relations here!**
 
 ### Callbacks
 

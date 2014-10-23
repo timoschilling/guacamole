@@ -125,11 +125,8 @@ describe Guacamole::Collection do
   end
 
   describe 'save' do
-
     before do
       allow(mapper).to receive(:model_to_document).with(model).and_return(document)
-      allow(mapper).to receive(:referenced_by_models).and_return([])
-      allow(mapper).to receive(:referenced_models).and_return([])
     end
 
     let(:key)       { double('Key') }
@@ -139,7 +136,6 @@ describe Guacamole::Collection do
     let(:response)  { double('Hash') }
 
     context 'a valid model' do
-
       before do
         allow(model).to receive(:valid?).and_return(true)
         allow(connection).to receive(:create_document).with(document).and_return(document)
@@ -171,7 +167,6 @@ describe Guacamole::Collection do
       end
 
       context 'which is persisted' do
-
         before do
           allow(model).to receive(:persisted?).and_return(true)
           allow(connection).to receive(:replace).and_return(response)
@@ -207,7 +202,6 @@ describe Guacamole::Collection do
     end
 
     context 'an invalid model' do
-
       before do
         expect(model).to receive(:valid?).and_return(false)
       end
@@ -266,12 +260,9 @@ describe Guacamole::Collection do
   end
 
   describe 'create' do
-
     before do
       allow(connection).to receive(:create_document).with(document).and_return(document)
       allow(mapper).to receive(:model_to_document).with(model).and_return(document)
-      allow(mapper).to receive(:referenced_by_models).and_return([])
-      allow(mapper).to receive(:referenced_models).and_return([])
     end
 
     let(:key)       { double('Key') }
@@ -319,92 +310,9 @@ describe Guacamole::Collection do
 
         subject.create model
       end
-
-      context 'with referenced model' do
-        let(:referenced_model)                { double('ReferencedModel') }
-        let(:referenced_model_name)           { :some_referenced_model }
-        let(:referenced_models)               { [referenced_model_name] }
-        let(:collection_for_referenced_model) { double('Collection') }
-
-        before do
-          allow(referenced_model).to receive(:persisted?).and_return(false)
-          allow(mapper).to receive(:collection_for)
-            .with(referenced_model_name)
-            .and_return(collection_for_referenced_model)
-          allow(mapper).to receive(:referenced_models).and_return(referenced_models)
-          allow(model).to receive(:send).with(referenced_model_name).and_return(referenced_model)
-          allow(collection_for_referenced_model).to receive(:save).with(referenced_model)
-        end
-
-        it 'should save each referenced model' do
-          expect(collection_for_referenced_model).to receive(:save).with(referenced_model)
-
-          subject.create model
-        end
-
-        it 'should save the reference only if it is not already persisted' do
-          allow(referenced_model).to receive(:persisted?).and_return(true)
-          expect(collection_for_referenced_model).not_to receive(:save).with(referenced_model)
-
-          subject.create model
-        end
-
-        it 'should save the reference only if it is present' do
-          allow(model).to receive(:send).with(:some_referenced_model).and_return(nil)
-          expect(collection_for_referenced_model).not_to receive(:save).with(referenced_model)
-
-          subject.create model
-        end
-      end
-
-      context 'with referenced_by model' do
-        let(:referenced_by_model)                { double('ReferencedByModel') }
-        let(:referenced_by_model_name)           { :some_referenced_by_model }
-        let(:referenced_by_models)               { [referenced_by_model_name] }
-        let(:collection_for_referenced_by_model) { double('Collection') }
-
-        before do
-          allow(referenced_by_model).to receive(:persisted?).and_return(false)
-          allow(referenced_by_model).to receive("#{model.class.name.demodulize.underscore}=").with(model)
-          allow(mapper).to receive(:collection_for)
-            .with(referenced_by_model_name)
-            .and_return(collection_for_referenced_by_model)
-          allow(mapper).to receive(:referenced_by_models).and_return(referenced_by_models)
-          allow(model).to receive(:send).with(referenced_by_model_name).and_return([referenced_by_model])
-          allow(collection_for_referenced_by_model).to receive(:save).with(referenced_by_model)
-        end
-
-        it 'should save the references' do
-          expect(collection_for_referenced_by_model).to receive(:save).with(referenced_by_model)
-
-          subject.create model
-        end
-
-        it 'should save the references only if it is not already persisted' do
-          allow(referenced_by_model).to receive(:persisted?).and_return(true)
-          expect(collection_for_referenced_by_model).not_to receive(:save).with(referenced_by_model)
-
-          subject.create model
-        end
-
-        it 'should save the references only if it is present' do
-          allow(model).to receive(:send).with(referenced_by_model_name).and_return([])
-          expect(collection_for_referenced_by_model).not_to receive(:save).with(referenced_by_model)
-
-          subject.create model
-        end
-
-        it 'should ensure the references have the parent model assigned prior saving' do
-          expect(referenced_by_model).to receive("#{model.class.name.demodulize.underscore}=").with(model).ordered
-          expect(collection_for_referenced_by_model).to receive(:save).with(referenced_by_model).ordered
-
-          subject.create model
-        end
-      end
     end
 
     context 'an invalid model' do
-
       before do
         expect(model).to receive(:valid?).and_return(false)
       end

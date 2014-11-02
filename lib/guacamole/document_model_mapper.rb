@@ -261,7 +261,13 @@ module Guacamole
 
     def handle_related_documents(document, model)
       edge_attributes.each do |edge_attribute|
-        model.send(edge_attribute.setter, Proxies::Relation.new(model, edge_attribute.edge_class))
+        just_one = case model.class.attribute_set[edge_attribute.name].type
+                   when Virtus::Attribute::Collection::Type then false
+                   else
+                     true
+                   end
+
+        model.send(edge_attribute.setter, Proxies::Relation.new(model, edge_attribute.edge_class, just_one))
       end
     end
   end

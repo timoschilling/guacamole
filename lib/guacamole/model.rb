@@ -218,6 +218,10 @@ module Guacamole
         key
       end
 
+      def _id
+        persisted? ? [self.class.name.underscore.pluralize, key].join('/') : nil
+      end
+
       def valid_with_callbacks?(context = nil)
         callbacks.run_callbacks :validate do
           valid_without_callbacks?(context)

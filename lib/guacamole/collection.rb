@@ -71,6 +71,8 @@ module Guacamole
       # @return [Ashikawa::Core::VertexCollection]
       def connection
         @connection ||= graph.add_vertex_collection(collection_name)
+      rescue
+        @connection ||= graph.vertex_collection(collection_name)
       end
 
       # The DocumentModelMapper for this collection
@@ -297,10 +299,13 @@ module Guacamole
       #       persisted. In future versions we should add something like `:autosave`
       #       to always save associated models.
       def create_document_from(model)
-        document = connection.create_document(model_to_document(model))
+        document = model_to_document(model)
 
-        model.key = document.key
-        model.rev = document.revision
+
+        result = tx_for_model(model, document)
+ 
+        model.key = result[model.object_id.to_s]['_key']
+        model.rev = result[model.object_id.to_s]['_rev']
 
         document
       end
@@ -311,11 +316,59 @@ module Guacamole
       # @note This will **not** update associated models (see {#create})
       def replace_document_from(model)
         document = model_to_document(model)
-        response = connection.replace(model.key, document)
+        
+        response = tx_for_model(model, document)
 
         model.rev = response['_rev']
 
         document
+      end
+
+      def tx_for_model(model, document)
+        edge_collections = mapper.edge_attributes.each_with_object([]) do |ea, edge_collections|
+          edge_collection = EdgeCollection.for(ea.edge_class)
+          to_mapper       = edge_collection.mapper_for_target(model)
+
+          from_vertices = [model].map { |m| { object_id: m.object_id, collection: self.collection_name, document: document, _key: model.key, _id: model._id } }
+
+          to_vertices = [model.send(ea.getter)].compact.flatten.map { |m| { object_id: m.object_id, collection: edge_collection.edge_class.to_collection.collection_name, document: to_mapper.model_to_document(m), _key: m.key, _id: m._id } }
+
+          edges = to_vertices.each_with_object([]) do |v, edges|
+            edges << {
+              :_from => model._id || model.object_id,
+              :_to   => v[:_id] || v[:object_id],
+              :attributes => {}
+            }
+          end
+
+          to_vertices = to_vertices.select { |v| v[:_key].nil? }
+          
+          edge_collections << {
+            name: edge_collection.collection_name,
+            fromVertices: from_vertices,
+            toVertices: to_vertices,
+            edges: edges
+          }
+        end
+
+        write_collections = read_collections = edge_collections.map do |ec|
+          [ec[:name]] +
+            ec[:fromVertices].map { |fv| fv[:collection] } +
+            ec[:toVertices].map { |tv| tv[:collection] }
+        end.flatten.uniq
+
+        transaction = database.create_transaction(transaction_code,
+                                                  write: write_collections,
+                                                  read:  read_collections)
+        transaction.wait_for_sync = true
+
+        transaction_params = {
+          edgeCollections: edge_collections,
+          graph: Guacamole.configuration.graph.name,
+          debug: true
+        }
+
+        transaction.execute(transaction_params)
       end
 
       # Gets the callback class for the given model class
@@ -326,6 +379,94 @@ module Guacamole
       def callbacks(model)
         Callbacks.callbacks_for(model)
       end
+
+      def transaction_code
+        <<-JS
+function(params) {
+    var db    = require("internal").db;
+    var graph = require("org/arangodb/general-graph")._graph(params.graph);
+    var console = require("console");
+
+    var rubyObjectMap = {};
+
+    console.info("Input params for transaction: %o", params);
+
+    var insertOrReplaceVertex = function(vertex) {
+        var result;
+        var _key = vertex._key;
+        console.info("The key for %o is: %s", vertex.document, _key);
+        if (_key === undefined || _key == null) {
+            result = graph[vertex.collection].save(vertex.document);
+        } else {
+            result = graph[vertex.collection].replace(_key, vertex.document);
+        }
+        vertex.document._key = result._key;
+        vertex.document._rev = result._rev;
+        vertex.document._id  = result._id;
+
+        rubyObjectMap[vertex.object_id.toString()] = vertex.document;
+        console.info("Vertex: %o", vertex);
+    }
+
+    var insertOrReplaceConnection = function(edgeCollection) {
+        edgeCollection.fromVertices.forEach(insertOrReplaceVertex);
+        edgeCollection.toVertices.forEach(insertOrReplaceVertex);
+
+     console.info("Current map: %o", rubyObjectMap);
+     console.info("All the edges: %o", edgeCollection.edges);
+
+        edgeCollection.edges.forEach(function(edge) {
+            console.info("Current Edge: %o", edge);
+            if (edge._from.toString().indexOf('/') == -1) {
+                edge._from = rubyObjectMap[edge._from.toString()]._id;
+            }
+            if (edge._to.toString().indexOf('/') == -1) {
+                edge._to = rubyObjectMap[edge._to.toString()]._id;
+            }
+
+            if (graph[edgeCollection.name].firstExample("_from", edge._from, "_to", edge._to) == null) {
+                graph[edgeCollection.name].save(edge._from, edge._to, edge.attributes);
+            }
+        });
+    }
+
+    params.edgeCollections.forEach(insertOrReplaceConnection);
+
+    return rubyObjectMap;
+}
+JS
+      end
     end
   end
 end
+
+
+__END__
+        # Create A with all new B
+        {
+          edge_collections: [
+                             {
+                               from_vertices: [ { object_id: a.object_id, collection: collection_for_a, doc: a } ],
+                               to_vertices:   [ { ... }, { ... } ]
+                             }
+                            ]
+        }
+
+        # Create A with one new B and one existing B
+        {
+          from_vertices: [ { object_id: a.object_id, collection: collection_for_a, doc: a } ],
+          to_vertices:   [ { ... } ],
+          edges: { :_to => 'B/123', :_from => new_a }
+        }
+
+        # Create B with new A
+        {
+          from_vertices: [ { ... } ],
+          to_vertices:   [ { collection: collection_for_b, doc: b, object_id: ... } ]
+        }
+
+        # Create B with existing A
+        {
+          to_vertices:   [ { collection: collection_for_b, doc: b, object_id: ... } ],
+          edges: { :_to => new_b, :_from => 'A/421' }
+        }

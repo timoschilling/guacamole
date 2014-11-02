@@ -8,8 +8,8 @@ require 'fabricators/author'
 class Authorship
   include Guacamole::Edge
 
-  from :authors, as: :author
-  to   :books, as: :book
+  from :authors
+  to   :books
 end
 
 class BooksCollection
@@ -29,19 +29,91 @@ class AuthorsCollection
 end
 
 describe 'Graph based relations' do
-  let(:suzanne_collins) { Fabricate(:author, name: 'Suzanne Collins') }
 
-  let(:the_hunger_games) { Fabricate(:book, title: 'The Hunger Games') }
-  let(:catching_fire) { Fabricate(:book, title: 'Catching Fire') }
-  let(:mockingjay) { Fabricate(:book, title: 'Mockingjay') }
-  let(:panem_trilogy) { [the_hunger_games, catching_fire, mockingjay] }
+  context 'having a start vertex and multiple target vertices' do
+    context 'all are new' do
+      let(:suzanne_collins) { Fabricate.build(:author, name: 'Suzanne Collins') }
 
-  it 'should store and load relations' do
-    suzanne_collins.books = panem_trilogy
-    AuthorsCollection.save suzanne_collins
+      let(:the_hunger_games) { Fabricate.build(:book, title: 'The Hunger Games') }
+      let(:catching_fire) { Fabricate.build(:book, title: 'Catching Fire') }
+      let(:mockingjay) { Fabricate.build(:book, title: 'Mockingjay') }
+      let(:panem_trilogy) { [the_hunger_games, catching_fire, mockingjay] }
+      
+      it 'should create the start, all targets and connect them' do
+        suzanne_collins.books = panem_trilogy
+        AuthorsCollection.save suzanne_collins
 
-    author = AuthorsCollection.by_key(suzanne_collins.key)
+        author = AuthorsCollection.by_key(suzanne_collins.key)
 
-    expect(author.books).to match_array panem_trilogy
+        expect(author.books.map(&:title)).to match_array panem_trilogy.map(&:title)
+      end
+    end
+    
+    context 'one target is new' do
+      let(:suzanne_collins) { Fabricate.build(:author, name: 'Suzanne Collins') }
+
+      let(:the_hunger_games) { Fabricate(:book, title: 'The Hunger Games') }
+      let(:catching_fire) { Fabricate(:book, title: 'Catching Fire') }
+      let(:mockingjay) { Fabricate.build(:book, title: 'Mockingjay') }
+      let(:panem_trilogy) { [the_hunger_games, catching_fire, mockingjay] }
+
+      it 'should create the start, the new target and connect both the new and existing ones' do
+        suzanne_collins.books = panem_trilogy
+        AuthorsCollection.save suzanne_collins
+
+        author = AuthorsCollection.by_key(suzanne_collins.key)
+
+        expect(author.books.map(&:title)).to match_array panem_trilogy.map(&:title)
+      end
+    end
+
+    context 'existing start gets another target' do
+      let(:suzanne_collins) { Fabricate(:author, name: 'Suzanne Collins') }
+
+      let(:the_hunger_games) { Fabricate(:book, title: 'The Hunger Games') }
+      let(:catching_fire) { Fabricate(:book, title: 'Catching Fire') }
+      let(:mockingjay) { Fabricate.build(:book, title: 'Mockingjay') }
+      let(:panem_trilogy) { [the_hunger_games, catching_fire, mockingjay] }
+
+      before do
+        suzanne_collins.books = [the_hunger_games, catching_fire]
+        AuthorsCollection.save suzanne_collins
+      end
+
+      it 'should save the new target and connect it to the start' do
+        suzanne_collins.books << mockingjay
+        AuthorsCollection.save suzanne_collins
+
+        author = AuthorsCollection.by_key(suzanne_collins.key)
+
+        expect(author.books.map(&:title)).to match_array panem_trilogy.map(&:title)
+      end
+    end
+
+    context 'new connection between existing start and existing target' do
+      let(:suzanne_collins) { Fabricate(:author, name: 'Suzanne Collins') }
+
+      let(:the_hunger_games) { Fabricate(:book, title: 'The Hunger Games') }
+      let(:catching_fire) { Fabricate(:book, title: 'Catching Fire') }
+      let(:mockingjay) { Fabricate(:book, title: 'Mockingjay') }
+      let(:panem_trilogy) { [the_hunger_games, catching_fire, mockingjay] }
+      
+      before do
+        suzanne_collins.books = [the_hunger_games, catching_fire]
+        AuthorsCollection.save suzanne_collins
+      end
+
+      it 'should just add a connection between start and target' do
+        suzanne_collins.books << mockingjay
+        AuthorsCollection.save suzanne_collins
+
+        author = AuthorsCollection.by_key(suzanne_collins.key)
+
+        expect(author.books.map(&:title)).to match_array panem_trilogy.map(&:title)
+      end
+    end
+  end
+
+  context 'having the target vertex and one target' do
   end
 end

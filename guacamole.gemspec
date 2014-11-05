@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.name          = 'guacamole'
   spec.version       = Guacamole::VERSION
   spec.authors       = ['Lucas Dohmen', 'Dirk Breuer']
-  spec.email         = ['moonglum@moonbeamlabs.com', 'dirk.breuer@gmail.com']
+  spec.email         = ['lucas@arangodb.com', 'dirk@arangodb.com']
   spec.description   = %q{ODM for ArangoDB}
   spec.summary       = %q{An ODM for ArangoDB that uses the DataMapper pattern.}
   spec.homepage      = 'http://guacamolegem.org'

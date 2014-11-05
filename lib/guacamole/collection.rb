@@ -249,7 +249,7 @@ module Guacamole
       # @raise [AQLNotSupportedError] If `aql_support` was not activated
       # @note Please use always bind parameters since they provide at least some form
       #       of protection from AQL injection.
-      # @see https://www.arangodb.org/manuals/2/Aql.html AQL Documentation
+      # @see https://docs.arangodb.com/Aql/README.html AQL Documentation
       def by_aql(aql_fragment, bind_parameters = {}, options = {})
         raise AQLNotSupportedError unless Guacamole.configuration.experimental_features.include?(:aql_support)
 

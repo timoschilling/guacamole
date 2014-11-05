@@ -6,7 +6,7 @@
 
 # Guacamole
 
-Guacamole is an Object Document Mapper (ODM) for the multi-model NoSQL database [ArangoDB](https://www.arangodb.org/). Its main goal is to support easy integration into Ruby on Rails but will likely work in other Rack-based frameworks as well. There are a couple of design goals behind Guacamole which should drive all our development effort:
+Guacamole is an Object Document Mapper (ODM) for the multi-model NoSQL database [ArangoDB](https://www.arangodb.com/). Its main goal is to support easy integration into Ruby on Rails but will likely work in other Rack-based frameworks as well. There are a couple of design goals behind Guacamole which should drive all our development effort:
 
   * Easy integration on the View layer (i.e. form builders)
   * Reflect the nature of NoSQL in general and ArangoDB in particular
@@ -86,7 +86,7 @@ After you created a configuration file you can create the database as in any oth
 bundle exec rake db:create
 ```
 
-If you're using Capistrano or something else make sure you change your deployment recipes accordingly to use the `guacamole.yml` and not the `database.yml`. Of course you would want to add [authentication](https://www.arangodb.org/manuals/2/DbaManualAuthentication.html) for the production environment. Additionally you may want to consider putting ArangoDB behind a SSL-proxy or use the [built in SSL support](https://www.arangodb.org/manuals/2/CommandLine.html#CommandLineArangoEndpoint).
+If you're using Capistrano or something else make sure you change your deployment recipes accordingly to use the `guacamole.yml` and not the `database.yml`. Of course you would want to add [authentication](https://docs.arangodb.com/ConfigureArango/Authentication.html) for the production environment. Additionally you may want to consider putting ArangoDB behind a SSL-proxy or use the [built in SSL support](https://docs.arangodb.com/ConfigureArango/Arangod.html).
 
 Now where everything is set up we can go ahead and create our application's logic. Before we give you some code to copy and paste we first give you a general usage and design overview.
 
@@ -146,7 +146,7 @@ We will automatically add both a `created_at` and an `updated_at` attribute to a
 
 #### The ID of a model
 
-In ArangoDB a document has three internal fields: `_id`, `_key` and `_rev`. For a detailed explanation how these three work together please refer to the [ArangoDB documentation](https://www.arangodb.org/manuals/2/HandlingDocuments.html#HandlingDocumentsIntro). Within Guacamole we will always use the `_key` because it is enough the identify any document within a collection. Both the `_key` and `_rev` attribute are available through the `Guacamole::Model#key` and `Guacamole::Model#rev` attribute. You don't have to do anything for this, we will take care of this for you.
+In ArangoDB a document has three internal fields: `_id`, `_key` and `_rev`. For a detailed explanation how these three work together please refer to the [ArangoDB documentation](https://docs.arangodb.com/Documents/DocumentAddress.html). Within Guacamole we will always use the `_key` because it is enough the identify any document within a collection. Both the `_key` and `_rev` attribute are available through the `Guacamole::Model#key` and `Guacamole::Model#rev` attribute. You don't have to do anything for this, we will take care of this for you.
 
 Additionally you will find an `id` method on you models. This is just an alias for `key`. This was added for `ActiveModel::Conversion` compliance. You **should always** use `key`.
 
@@ -192,7 +192,7 @@ bundle exec rails generate collection ponies
 Currently your options what you can do with a collection are quite limited. We will eventually add more features, but for now you basically have this features:
 
   * CRUD operations for your models
-  * Where the "Read"-part is limited to [Simple Queries](https://www.arangodb.org/manuals/2/SimpleQueries.html). But more on this later.
+  * Where the "Read"-part is limited to [Simple Queries](https://docs.arangodb.com/SimpleQueries/README.html). But more on this later.
   * Mapping embedded models
   * Realizing basic associations
 
@@ -235,7 +235,7 @@ PoniesCollection.delete existing_pony
 
 #### Retrieve models
 
-As mentioned before querying for models is quite limited as of now. We only support [Simple Queries](https://www.arangodb.org/manuals/2/SimpleQueries.html) at this point. You can perform the following basic operations with them:
+As mentioned before querying for models is quite limited as of now. We only support [Simple Queries](https://docs.arangodb.com/SimpleQueries/README.html) at this point. You can perform the following basic operations with them:
 
   * Getting a single model `by_key`
   * Getting `all` models from a collection.
@@ -252,7 +252,7 @@ some_ponies.first
 # => #<Pony:0x90u81 …>
 ```
 
-We're well aware this is not sufficient for building sophisticated applications. We're are working on something to make [AQL](https://www.arangodb.org/manuals/2/Aql.html) usable from Guacamole.
+We're well aware this is not sufficient for building sophisticated applications. We're are working on something to make [AQL](https://docs.arangodb.com/Aql/README.html) usable from Guacamole.
 
 ### Mapping
 

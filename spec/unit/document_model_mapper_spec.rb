@@ -91,6 +91,14 @@ describe Guacamole::DocumentModelMapper do
         subject.document_to_model document
       end
 
+      it 'should set first the key and rev and after that the proxy' do
+        expect(model_instance).to receive(:key=).ordered
+        expect(model_instance).to receive(:rev=).ordered
+        expect(subject).to receive(:handle_related_documents).ordered
+        
+        subject.document_to_model document
+      end
+
       it 'should assign the relation proxy for the appropriate attribute' do
         expect(model_instance).to receive(:my_relation=).with(relation_proxy)
 

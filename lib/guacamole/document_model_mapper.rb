@@ -143,10 +143,10 @@ module Guacamole
       identity_map.retrieve_or_store model_class, document.key do
         model = model_class.new(document.to_h)
 
-        handle_related_documents(document, model)
-
         model.key = document.key
         model.rev = document.revision
+
+        handle_related_documents(document, model)
 
         model
       end

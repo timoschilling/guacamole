@@ -129,7 +129,7 @@ module Guacamole
     #       seems to be a good place for this functionality.
     # @param [symbol, string] model_name the name of the model
     # @return [class] the {collection} class for the given model name
-    def collection_for(model_name)
+    def collection_for(model_name = model_class.name)
       self.class.collection_for model_name
     end
 

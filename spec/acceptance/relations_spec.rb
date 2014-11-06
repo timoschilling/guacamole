@@ -142,6 +142,30 @@ describe 'Graph based relations' do
 
         expect(BooksCollection.by_key(deathly_hallows.key)).not_to be_nil
       end
+
+      context 'removing the target' do
+        # This is just a sanity check at this point since it is handled by ArangoDB itself
+        it 'should remove the edge too' do
+          expect { BooksCollection.delete(deathly_hallows) }.to change(&authorships_count).by -1
+        end
+      end
+    end
+
+    context 'remove one target should remove the edge too' do
+      let(:suzanne_collins) { Fabricate(:author, name: 'Suzanne Collins') }
+
+      let(:the_hunger_games) { Fabricate(:book, title: 'The Hunger Games') }
+      let(:catching_fire) { Fabricate(:book, title: 'Catching Fire') }
+      let(:mockingjay) { Fabricate(:book, title: 'Mockingjay') }
+      let(:deathly_hallows) { Fabricate(:book, title: 'Deathly Hallows') }
+      let(:panem_trilogy) { [the_hunger_games, catching_fire, mockingjay] }
+
+      let(:authorships_count) { -> { AuthorshipsCollection.by_example(_from: suzanne_collins._id).count } }
+      
+      before do
+        suzanne_collins.books = [the_hunger_games, catching_fire, mockingjay, deathly_hallows]
+        AuthorsCollection.save suzanne_collins
+      end
     end
   end
 

@@ -327,18 +327,48 @@ module Guacamole
       def tx_for_model(model, document)
         edge_collections = mapper.edge_attributes.each_with_object([]) do |ea, edge_collections|
           edge_collection = EdgeCollection.for(ea.edge_class)
-          to_mapper       = edge_collection.mapper_for_target(model)
 
-          from_vertices = [model].map { |m| { object_id: m.object_id, collection: self.collection_name, document: document, _key: model.key, _id: model._id } }
+          select_mapper = ->(m) { edge_collection.mapper_for_start(m) }
+          
+          case model
+          when ea.edge_class.from_collection.model_class
+            from_models = [model]
+            to_models   = [model.send(ea.getter)].compact.flatten
+          when ea.edge_class.to_collection.model_class
+            to_models   = [model]
+            from_models = [model.send(ea.getter)].compact.flatten
+          else
+            raise RuntimeError
+          end
 
-          to_vertices = [model.send(ea.getter)].compact.flatten.map { |m| { object_id: m.object_id, collection: edge_collection.edge_class.to_collection.collection_name, document: to_mapper.model_to_document(m), _key: m.key, _id: m._id } }
-
-          edges = to_vertices.each_with_object([]) do |v, edges|
-            edges << {
-              :_from => model._id || model.object_id,
-              :_to   => v[:_id] || v[:object_id],
-              :attributes => {}
+          from_vertices = from_models.map do |m|
+            {
+              object_id: m.object_id,
+              collection: edge_collection.edge_class.from_collection.collection_name,
+              document: select_mapper.call(m).model_to_document(m),
+              _key: m.key,
+              _id: m._id
             }
+          end
+
+          to_vertices = to_models.map do |m|
+            {
+              object_id: m.object_id,
+              collection: edge_collection.edge_class.to_collection.collection_name,
+              document: select_mapper.call(m).model_to_document(m),
+              _key: m.key,
+              _id: m._id
+            }
+          end
+
+          edges = from_vertices.each_with_object([]) do |from_vertex, edges|
+            to_vertices.each do |to_vertex| 
+              edges << {
+                :_from => from_vertex[:_id] || from_vertex[:object_id],
+                :_to   => to_vertex[:_id]   || to_vertex[:object_id],
+                :attributes => {}
+              }
+            end
           end
 
           to_vertices = to_vertices.select { |v| v[:_key].nil? }

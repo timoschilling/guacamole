@@ -112,6 +112,37 @@ describe 'Graph based relations' do
         expect(author.books.map(&:title)).to match_array panem_trilogy.map(&:title)
       end
     end
+
+    context 'remove an existing connection' do
+      let(:suzanne_collins) { Fabricate(:author, name: 'Suzanne Collins') }
+
+      let(:the_hunger_games) { Fabricate(:book, title: 'The Hunger Games') }
+      let(:catching_fire) { Fabricate(:book, title: 'Catching Fire') }
+      let(:mockingjay) { Fabricate(:book, title: 'Mockingjay') }
+      let(:deathly_hallows) { Fabricate(:book, title: 'Deathly Hallows') }
+      let(:panem_trilogy) { [the_hunger_games, catching_fire, mockingjay] }
+
+      let(:authorships_count) { -> { AuthorshipsCollection.by_example(_from: suzanne_collins._id).count } }
+      
+      before do
+        suzanne_collins.books = [the_hunger_games, catching_fire, mockingjay, deathly_hallows]
+        AuthorsCollection.save suzanne_collins
+      end
+
+      it 'should remove the edge' do
+        suzanne_collins.books.pop
+        
+        expect { AuthorsCollection.save suzanne_collins }.to change(&authorships_count).by -1
+      end
+
+      it 'should not remove the target vertex' do
+        suzanne_collins.books.pop
+
+        AuthorsCollection.save suzanne_collins
+
+        expect(BooksCollection.by_key(deathly_hallows.key)).not_to be_nil
+      end
+    end
   end
 
   context 'having the target vertex and one target' do

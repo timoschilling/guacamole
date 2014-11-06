@@ -334,9 +334,11 @@ module Guacamole
           when ea.edge_class.from_collection.model_class
             from_models = [model]
             to_models   = [model.send(ea.getter)].compact.flatten
+            old_edges   = edge_collection.by_example(_from: model._id).map(&:key)
           when ea.edge_class.to_collection.model_class
             to_models   = [model]
             from_models = [model.send(ea.getter)].compact.flatten
+            old_edges   = edge_collection.by_example(_to: model._id).map(&:key)
           else
             raise RuntimeError
           end
@@ -372,12 +374,13 @@ module Guacamole
           end
 
           to_vertices = to_vertices.select { |v| v[:_key].nil? }
-          
+
           edge_collections << {
             name: edge_collection.collection_name,
             fromVertices: from_vertices,
             toVertices: to_vertices,
-            edges: edges
+            edges: edges,
+            oldEdges: old_edges
           }
         end
 
@@ -445,6 +448,11 @@ function(params) {
      console.info("Current map: %o", rubyObjectMap);
      console.info("All the edges: %o", edgeCollection.edges);
 
+        db._query("FOR e IN @@edge_collection FILTER POSITION(@keys, e._key, false) == true REMOVE e IN @@edge_collection", {
+                  "@edge_collection": edgeCollection.name,
+                  "keys": edgeCollection.oldEdges
+                  });
+
         edgeCollection.edges.forEach(function(edge) {
             console.info("Current Edge: %o", edge);
             if (edge._from.toString().indexOf('/') == -1) {
@@ -454,9 +462,7 @@ function(params) {
                 edge._to = rubyObjectMap[edge._to.toString()]._id;
             }
 
-            if (graph[edgeCollection.name].firstExample("_from", edge._from, "_to", edge._to) == null) {
-                graph[edgeCollection.name].save(edge._from, edge._to, edge.attributes);
-            }
+            graph[edgeCollection.name].save(edge._from, edge._to, edge.attributes);
         });
     }
 

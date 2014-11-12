@@ -70,6 +70,7 @@ module Guacamole
       # @see http://rubydoc.info/gems/ashikawa-core/Ashikawa/Core/VertexCollection
       # @return [Ashikawa::Core::VertexCollection]
       def connection
+        # FIXME: This is a workaround for a bug in Ashikawa::Core (https://github.com/triAGENS/ashikawa-core/issues/139)
         @connection ||= graph.add_vertex_collection(collection_name)
       rescue
         @connection ||= graph.vertex_collection(collection_name)
@@ -299,15 +300,12 @@ module Guacamole
       #       persisted. In future versions we should add something like `:autosave`
       #       to always save associated models.
       def create_document_from(model)
-        document = model_to_document(model)
-
-
-        result = tx_for_model(model, document)
+        result = tx_for_model(model)
  
         model.key = result[model.object_id.to_s]['_key']
         model.rev = result[model.object_id.to_s]['_rev']
 
-        document
+        model
       end
 
       # Replace a document in the database with this model
@@ -315,16 +313,14 @@ module Guacamole
       # @api private
       # @note This will **not** update associated models (see {#create})
       def replace_document_from(model)
-        document = model_to_document(model)
-        
-        response = tx_for_model(model, document)
+        response = tx_for_model(model)
 
         model.rev = response['_rev']
 
-        document
+        model
       end
 
-      def tx_for_model(model, document)
+      def tx_for_model(model)
         edge_collections = mapper.edge_attributes.each_with_object([]) do |ea, edge_collections|
           edge_collection = EdgeCollection.for(ea.edge_class)
 
@@ -341,7 +337,7 @@ module Guacamole
             old_edges   = edge_collection.by_example(_to: model._id).map(&:key)
           else
             raise RuntimeError
-          end
+         end
 
           from_vertices = from_models.map do |m|
             {
@@ -475,34 +471,3 @@ JS
     end
   end
 end
-
-
-__END__
-        # Create A with all new B
-        {
-          edge_collections: [
-                             {
-                               from_vertices: [ { object_id: a.object_id, collection: collection_for_a, doc: a } ],
-                               to_vertices:   [ { ... }, { ... } ]
-                             }
-                            ]
-        }
-
-        # Create A with one new B and one existing B
-        {
-          from_vertices: [ { object_id: a.object_id, collection: collection_for_a, doc: a } ],
-          to_vertices:   [ { ... } ],
-          edges: { :_to => 'B/123', :_from => new_a }
-        }
-
-        # Create B with new A
-        {
-          from_vertices: [ { ... } ],
-          to_vertices:   [ { collection: collection_for_b, doc: b, object_id: ... } ]
-        }
-
-        # Create B with existing A
-        {
-          to_vertices:   [ { collection: collection_for_b, doc: b, object_id: ... } ],
-          edges: { :_to => new_b, :_from => 'A/421' }
-        }

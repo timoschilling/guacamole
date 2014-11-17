@@ -8,7 +8,7 @@ NAME=ArangoDB-$VERSION
 if [ ! -d "$DIR/$NAME" ]; then
   # download ArangoDB
   echo "wget http://www.arangodb.com/repositories/travisCI/$NAME.tar.gz"
-  wget http://www.arangodb.com/repositories/travisCI/$NAME.tar.gz
+  wget --no-check-certificate http://www.arangodb.com/repositories/travisCI/$NAME.tar.gz
   echo "tar zxf $NAME.tar.gz"
   tar zvxf $NAME.tar.gz
   mv `find . -type d -name "ArangoDB-*"` $NAME

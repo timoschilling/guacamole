@@ -442,7 +442,7 @@ class User
 end
 ``` 
 
-You can define define callbacks for the following actions:
+You can define callbacks for the following actions:
 
  * `before_validate`
  * `around_validate`

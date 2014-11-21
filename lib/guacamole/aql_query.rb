@@ -44,7 +44,7 @@ module Guacamole
     #
     # @return [String] An AQL string ready to be send to Arango
     def aql_string
-      aql_string = "FOR #{model_name} IN #{collection_name} #{aql_fragment} #{return_as}"
+      aql_string = "#{for_in} #{aql_fragment} #{return_as}"
       Guacamole.logger.debug "[AQL] #{aql_string} | bind_parameters: #{bind_parameters}"
       aql_string
     end
@@ -54,6 +54,10 @@ module Guacamole
     # @return [String] Either the default `RETURN model_name` or a custom string
     def return_as
       options[:return_as]
+    end
+
+    def for_in
+      options[:for_in]
     end
 
     # Should the mapping step be perfomed? If set to false we will return the raw document.
@@ -69,6 +73,7 @@ module Guacamole
     def default_options
       {
         return_as: "RETURN #{model_name}",
+        for_in:    "FOR #{model_name} IN #{collection_name}",
         mapping:   true
       }
     end

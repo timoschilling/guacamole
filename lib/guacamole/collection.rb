@@ -231,13 +231,7 @@ module Guacamole
       #
       # Since Simple Queries are quite limited in their possibilities you will need to
       # use AQL for more advanced data retrieval. Currently there is only a very basic
-      # and experimental support for AQL. Eventually we will replace it with an advanced
-      # query builder DSL. Due to this, we deactivated this feature per default. You
-      # need to activate it with {Configuration#aql_support}:
-      #
-      #   Guacamole::Configuration.aql_support = :experimental
-      #
-      # If not activated it we will raise an error.
+      # support for AQL. Nevertheless it will allow to use any arbitrary query you want.
       #
       # @param [String] aql_fragment An AQL string that will will be put between the
       #                 `FOR x IN coll` and the `RETURN x` part.
@@ -246,13 +240,10 @@ module Guacamole
       # @option options [String] :return_as ('RETURN #{model_name}') A custom `RETURN` statement
       # @option options [Boolean] :mapping (true) Should the mapping be performed?
       # @return [Query]
-      # @raise [AQLNotSupportedError] If `aql_support` was not activated
       # @note Please use always bind parameters since they provide at least some form
       #       of protection from AQL injection.
       # @see https://docs.arangodb.com/Aql/README.html AQL Documentation
       def by_aql(aql_fragment, bind_parameters = {}, options = {})
-        raise AQLNotSupportedError unless Guacamole.configuration.experimental_features.include?(:aql_support)
-
         query                 = AqlQuery.new(self, mapper, options)
         query.aql_fragment    = aql_fragment
         query.bind_parameters = bind_parameters

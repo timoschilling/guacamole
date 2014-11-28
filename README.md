@@ -560,23 +560,15 @@ While there are a lot of open issues we would like to present you a high level o
   * An example Rails application to be used as both an acceptance test suite and a head start for Guacamole and ArangoDB
   * An AQL query builder
 
-### Experimental AQL Support
+### AQL Support
 
-As mentioned before we're working on [something more sophisticated to support AQL](https://github.com/moonglum/brazil/issues/8). But this will not be finished any time soon. Meanwhile you could play with the experimental AQL support:
-
-```ruby
-config.guacamole.experimental_features = [:aql_support]
-```
-
-After that you can perform very basic queries like this one:
+As mentioned before we're working on [something more sophisticated to support AQL](https://github.com/moonglum/brazil/issues/8). But this will not be finished any time soon. That said, there is still a way to to perform AQL queries against ArangoDB. For simple queries you can do something like this:
 
 ```ruby
 PoniesCollection.by_aql('FILTER pony.name == @name', name: 'Rainbow Dash')
 ```
 
-The result of this will a correctly mapped Array of `Pony` models.
-
-**Note**: Please use only this form to pass parameters into a query. Using string interpolation will leave you vulnerable to AQL-injections.
+The result of this will a correctly mapped Array of `Pony` models. If this is not enough thou, don't worry, you can get really fancy with this. Due to this you can deactivate the automatic mapping of the response. In that case you will receive just a raw document you can work with. **Note**: Please use only this form to pass parameters into a query. Using string interpolation will leave you vulnerable to AQL-injections.
 
 For more information about usage please refer to the RDoc and the code.
 

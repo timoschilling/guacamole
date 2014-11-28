@@ -48,9 +48,27 @@ module Guacamole
         #        https://github.com/triAGENS/ashikawa-core/issues/136 is done.
       end
 
-      def neighbors(model)
-        query = GraphQuery.new(graph, mapper_for_target(model))
-        query.neighbors(model, collection_name)
+      def neighbors(model, direction = :outbound)
+        aql_string = <<-AQL
+        FOR n IN GRAPH_NEIGHBORS(@graph,
+                        { _key: @model_key },
+                        { direction: @direction, edgeCollectionRestriction: @edge_collection })
+          RETURN n.vertex
+        AQL
+
+        bind_parameters = {
+          graph: Guacamole.configuration.graph.name,
+          model_key: model.key,
+          edge_collection: collection_name,
+          direction: direction
+        }
+
+        options = {
+          return_as: nil,
+          for_in:    nil
+        }
+
+        by_aql(aql_string, bind_parameters, options)
       end
 
       def mapper_for_target(model)

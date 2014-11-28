@@ -6,13 +6,15 @@ require 'guacamole/edge_collection'
 module Guacamole
   module Proxies
     class Relation < Proxy
-      def initialize(model, edge_class, just_one = false)
+      def initialize(model, edge_class, options = {})
         responsible_edge_collection = EdgeCollection.for(edge_class)
 
-        if just_one
-          init model, -> () { responsible_edge_collection.neighbors(model).to_a.first }
+        direction = options[:inverse] ? :inbound : :outbound
+
+        if options[:just_one]
+          init model, -> () { responsible_edge_collection.neighbors(model, direction).to_a.first }
         else
-          init model, -> () { responsible_edge_collection.neighbors(model) }
+          init model, -> () { responsible_edge_collection.neighbors(model, direction) }
         end
       end
     end

@@ -329,11 +329,11 @@ module Guacamole
           case model
           when ea.edge_class.from_collection.model_class
             from_models = [model]
-            to_models   = [model.send(ea.getter).try(:to_a)].compact.flatten
+            to_models   = [model.send(ea.getter)].compact.flatten
             old_edges   = edge_collection.by_example(_from: model._id).map(&:key)
           when ea.edge_class.to_collection.model_class
             to_models   = [model]
-            from_models = [model.send(ea.getter).try(:to_a)].compact.flatten
+            from_models = [model.send(ea.getter)].compact.flatten
             old_edges   = edge_collection.by_example(_to: model._id).map(&:key)
           else
             raise RuntimeError

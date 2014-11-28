@@ -64,6 +64,10 @@ module Guacamole
         options[:via]
       end
 
+      def inverse?
+        !!options[:inverse]
+      end
+
       # To Attribute instances are equal if their name is equal
       #
       # @param [Attribute] other The Attribute to compare this one to
@@ -267,7 +271,9 @@ module Guacamole
                      true
                    end
 
-        model.send(edge_attribute.setter, Proxies::Relation.new(model, edge_attribute.edge_class, just_one))
+        opts = { just_one: just_one, inverse: edge_attribute.inverse? }
+
+        model.send(edge_attribute.setter, Proxies::Relation.new(model, edge_attribute.edge_class, opts))
       end
     end
   end

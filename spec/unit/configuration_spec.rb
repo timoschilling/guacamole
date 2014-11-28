@@ -270,21 +270,4 @@ development:
       subject.configure_with_uri(connection_uri)
     end
   end
-
-  describe 'experimental_features' do
-    let(:fresh_config) { Guacamole::Configuration.new }
-
-    after do
-      subject.experimental_features = []
-    end
-
-    it 'should default to none' do
-      expect(fresh_config.experimental_features).to be_empty
-    end
-
-    it 'should accept a list of features to activate' do
-      subject.experimental_features = [:aql_support]
-      expect(subject.experimental_features).to include :aql_support
-    end
-  end
 end

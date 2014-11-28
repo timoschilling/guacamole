@@ -105,18 +105,13 @@ module Guacamole
     # @!visibility protected
     attr_accessor :database, :default_mapper, :logger
 
-    AVAILABLE_EXPERIMENTAL_FEATURES = [
-      :aql_support
-    ]
-
     class << self
       extend Forwardable
 
       def_delegators :configuration,
                      :database, :database=,
                      :default_mapper=,
-                     :logger=,
-                     :experimental_features=, :experimental_features
+                     :logger=
 
       def default_mapper
         configuration.default_mapper || (self.default_mapper = Guacamole::DocumentModelMapper)
@@ -211,21 +206,6 @@ module Guacamole
       def process_file_with_erb(file_name)
         ERB.new(File.read(file_name)).result
       end
-    end
-
-    # A list of active experimental features. Refer to `AVAILABLE_EXPERIMENTAL_FEATURES` to see
-    # what can be activated.
-    #
-    # @return [Array<Symbol>] The activated experimental features. Defaults to `[]`
-    def experimental_features
-      @experimental_features || []
-    end
-
-    # Experimental features to activate
-    #
-    # @param [Array<Symbol>] features A list of experimental features to activate
-    def experimental_features=(features)
-      @experimental_features = features
     end
   end
 end

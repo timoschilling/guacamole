@@ -394,7 +394,7 @@ module Guacamole
         transaction_params = {
           edgeCollections: edge_collections,
           graph: Guacamole.configuration.graph.name,
-          debug: true
+          log_level: 'debug'
         }
 
         transaction.execute(transaction_params)
@@ -412,18 +412,19 @@ module Guacamole
       def transaction_code
         <<-JS
 function(params) {
-    var db    = require("internal").db;
-    var graph = require("org/arangodb/general-graph")._graph(params.graph);
-    var console = require("console");
+    var db        = require("internal").db;
+    var graph     = require("org/arangodb/general-graph")._graph(params.graph);
+    var console   = require("console");
+    var log_level = params['log_level'];
 
     var rubyObjectMap = {};
 
-    console.info("Input params for transaction: %o", params);
+    console[log_level]("Input params for transaction: %o", params);
 
     var insertOrReplaceVertex = function(vertex) {
         var result;
         var _key = vertex._key;
-        console.info("The key for %o is: %s", vertex.document, _key);
+        console[log_level]("The key for %o is: %s", vertex.document, _key);
         if (_key === undefined || _key == null) {
             result = graph[vertex.collection].save(vertex.document);
         } else {
@@ -434,15 +435,15 @@ function(params) {
         vertex.document._id  = result._id;
 
         rubyObjectMap[vertex.object_id.toString()] = vertex.document;
-        console.info("Vertex: %o", vertex);
+        console[log_level]("Vertex: %o", vertex);
     }
 
     var insertOrReplaceConnection = function(edgeCollection) {
         edgeCollection.fromVertices.forEach(insertOrReplaceVertex);
         edgeCollection.toVertices.forEach(insertOrReplaceVertex);
 
-     console.info("Current map: %o", rubyObjectMap);
-     console.info("All the edges: %o", edgeCollection.edges);
+     console[log_level]("Current map: %o", rubyObjectMap);
+     console[log_level]("All the edges: %o", edgeCollection.edges);
 
         db._query("FOR e IN @@edge_collection FILTER POSITION(@keys, e._key, false) == true REMOVE e IN @@edge_collection", {
                   "@edge_collection": edgeCollection.name,
@@ -450,7 +451,7 @@ function(params) {
                   });
 
         edgeCollection.edges.forEach(function(edge) {
-            console.info("Current Edge: %o", edge);
+            console[log_level]("Current Edge: %o", edge);
             if (edge._from.toString().indexOf('/') == -1) {
                 edge._from = rubyObjectMap[edge._from.toString()]._id;
             }

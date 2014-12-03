@@ -43,6 +43,12 @@ module Guacamole
         name
       end
 
+      def get_value(model)
+        value = model.send(getter)
+
+        value.kind_of?(Guacamole::Query) ? value.entries : value
+      end
+
       # The name of the setter for this attribute
       #
       # @return [String] The method name to set this attribute

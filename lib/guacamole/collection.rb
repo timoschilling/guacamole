@@ -301,7 +301,7 @@ module Guacamole
       #       to always save associated models.
       def create_document_from(model)
         result = tx_for_model(model)
- 
+
         model.key = result[model.object_id.to_s]['_key']
         model.rev = result[model.object_id.to_s]['_rev']
 
@@ -325,15 +325,15 @@ module Guacamole
           edge_collection = EdgeCollection.for(ea.edge_class)
 
           select_mapper = ->(m) { edge_collection.mapper_for_start(m) }
-          
+
           case model
           when ea.edge_class.from_collection.model_class
             from_models = [model]
-            to_models   = [model.send(ea.getter)].compact.flatten
+            to_models   = [ea.get_value(model)].compact.flatten
             old_edges   = edge_collection.by_example(_from: model._id).map(&:key)
           when ea.edge_class.to_collection.model_class
             to_models   = [model]
-            from_models = [model.send(ea.getter)].compact.flatten
+            from_models = [ea.get_value(model)].compact.flatten
             old_edges   = edge_collection.by_example(_to: model._id).map(&:key)
           else
             raise RuntimeError
@@ -360,7 +360,7 @@ module Guacamole
           end
 
           edges = from_vertices.each_with_object([]) do |from_vertex, edges|
-            to_vertices.each do |to_vertex| 
+            to_vertices.each do |to_vertex|
               edges << {
                 :_from => from_vertex[:_id] || from_vertex[:object_id],
                 :_to   => to_vertex[:_id]   || to_vertex[:object_id],
@@ -424,6 +424,11 @@ function(params) {
     var insertOrReplaceVertex = function(vertex) {
         var result;
         var _key = vertex._key;
+
+        if (rubyObjectMap[vertex.object_id.toString()] !== undefined && (_key === undefined || _key == null)) {
+          return true;
+        }
+
         console[log_level]("The key for %o is: %s", vertex.document, _key);
         if (_key === undefined || _key == null) {
             result = graph[vertex.collection].save(vertex.document);

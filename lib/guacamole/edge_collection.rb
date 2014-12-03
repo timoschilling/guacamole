@@ -48,7 +48,7 @@ module Guacamole
         #        https://github.com/triAGENS/ashikawa-core/issues/136 is done.
       end
 
-      def neighbors(model, direction = :outbound)
+      def neighbors(model, direction = :inbound)
         aql_string = <<-AQL
         FOR n IN GRAPH_NEIGHBORS(@graph,
                         { _key: @model_key },
@@ -63,12 +63,12 @@ module Guacamole
           direction: direction
         }
 
-        options = {
-          return_as: nil,
-          for_in:    nil
-        }
+        options = { return_as: nil, for_in: nil }
 
-        by_aql(aql_string, bind_parameters, options)
+        query                 = AqlQuery.new(self, mapper_for_target(model), options)
+        query.aql_fragment    = aql_string
+        query.bind_parameters = bind_parameters
+        query
       end
 
       def mapper_for_target(model)
@@ -82,7 +82,7 @@ module Guacamole
       def vertex_mapper
         [edge_class.from_collection, edge_class.to_collection].map(&:mapper)
       end
-    end 
+    end
 
     included do
       add_edge_definition_to_graph

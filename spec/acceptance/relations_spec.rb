@@ -16,7 +16,7 @@ class BooksCollection
   include Guacamole::Collection
 
   map do
-    attribute :author, via: Authorship
+    attribute :author, via: Authorship, inverse: true
   end
 end
 

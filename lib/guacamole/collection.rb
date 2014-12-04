@@ -2,6 +2,7 @@
 
 require 'guacamole/query'
 require 'guacamole/aql_query'
+require 'guacamole/transaction'
 
 require 'ashikawa-core'
 require 'active_support'
@@ -300,7 +301,7 @@ module Guacamole
       #       persisted. In future versions we should add something like `:autosave`
       #       to always save associated models.
       def create_document_from(model)
-        result = tx_for_model(model)
+        result = with_transaction(model)
 
         model.key = result[model.object_id.to_s]['_key']
         model.rev = result[model.object_id.to_s]['_rev']
@@ -313,91 +314,15 @@ module Guacamole
       # @api private
       # @note This will **not** update associated models (see {#create})
       def replace_document_from(model)
-        response = tx_for_model(model)
+        result = with_transaction(model)
 
-        model.rev = response['_rev']
+        model.rev = result['_rev']
 
         model
       end
 
-      def tx_for_model(model)
-        edge_collections = mapper.edge_attributes.each_with_object([]) do |ea, edge_collections|
-          edge_collection = EdgeCollection.for(ea.edge_class)
-
-          select_mapper = ->(m) { edge_collection.mapper_for_start(m) }
-
-          case model
-          when ea.edge_class.from_collection.model_class
-            from_models = [model]
-            to_models   = [ea.get_value(model)].compact.flatten
-            old_edges   = edge_collection.by_example(_from: model._id).map(&:key)
-          when ea.edge_class.to_collection.model_class
-            to_models   = [model]
-            from_models = [ea.get_value(model)].compact.flatten
-            old_edges   = edge_collection.by_example(_to: model._id).map(&:key)
-          else
-            raise RuntimeError
-         end
-
-          from_vertices = from_models.map do |m|
-            {
-              object_id: m.object_id,
-              collection: edge_collection.edge_class.from_collection.collection_name,
-              document: select_mapper.call(m).model_to_document(m),
-              _key: m.key,
-              _id: m._id
-            }
-          end
-
-          to_vertices = to_models.map do |m|
-            {
-              object_id: m.object_id,
-              collection: edge_collection.edge_class.to_collection.collection_name,
-              document: select_mapper.call(m).model_to_document(m),
-              _key: m.key,
-              _id: m._id
-            }
-          end
-
-          edges = from_vertices.each_with_object([]) do |from_vertex, edges|
-            to_vertices.each do |to_vertex|
-              edges << {
-                :_from => from_vertex[:_id] || from_vertex[:object_id],
-                :_to   => to_vertex[:_id]   || to_vertex[:object_id],
-                :attributes => {}
-              }
-            end
-          end
-
-          to_vertices = to_vertices.select { |v| v[:_key].nil? }
-
-          edge_collections << {
-            name: edge_collection.collection_name,
-            fromVertices: from_vertices,
-            toVertices: to_vertices,
-            edges: edges,
-            oldEdges: old_edges
-          }
-        end
-
-        write_collections = read_collections = edge_collections.map do |ec|
-          [ec[:name]] +
-            ec[:fromVertices].map { |fv| fv[:collection] } +
-            ec[:toVertices].map { |tv| tv[:collection] }
-        end.flatten.uniq
-
-        transaction = database.create_transaction(transaction_code,
-                                                  write: write_collections,
-                                                  read:  read_collections)
-        transaction.wait_for_sync = true
-
-        transaction_params = {
-          edgeCollections: edge_collections,
-          graph: Guacamole.configuration.graph.name,
-          log_level: 'debug'
-        }
-
-        transaction.execute(transaction_params)
+      def with_transaction(model)
+        Transaction.run(collection: self, model: model)
       end
 
       # Gets the callback class for the given model class
@@ -407,72 +332,6 @@ module Guacamole
       # @return [Callbacks] An instance of the registered callback class
       def callbacks(model)
         Callbacks.callbacks_for(model)
-      end
-
-      def transaction_code
-        <<-JS
-function(params) {
-    var db        = require("internal").db;
-    var graph     = require("org/arangodb/general-graph")._graph(params.graph);
-    var console   = require("console");
-    var log_level = params['log_level'];
-
-    var rubyObjectMap = {};
-
-    console[log_level]("Input params for transaction: %o", params);
-
-    var insertOrReplaceVertex = function(vertex) {
-        var result;
-        var _key = vertex._key;
-
-        if (rubyObjectMap[vertex.object_id.toString()] !== undefined && (_key === undefined || _key == null)) {
-          return true;
-        }
-
-        console[log_level]("The key for %o is: %s", vertex.document, _key);
-        if (_key === undefined || _key == null) {
-            result = graph[vertex.collection].save(vertex.document);
-        } else {
-            result = graph[vertex.collection].replace(_key, vertex.document);
-        }
-        vertex.document._key = result._key;
-        vertex.document._rev = result._rev;
-        vertex.document._id  = result._id;
-
-        rubyObjectMap[vertex.object_id.toString()] = vertex.document;
-        console[log_level]("Vertex: %o", vertex);
-    }
-
-    var insertOrReplaceConnection = function(edgeCollection) {
-        edgeCollection.fromVertices.forEach(insertOrReplaceVertex);
-        edgeCollection.toVertices.forEach(insertOrReplaceVertex);
-
-     console[log_level]("Current map: %o", rubyObjectMap);
-     console[log_level]("All the edges: %o", edgeCollection.edges);
-
-        db._query("FOR e IN @@edge_collection FILTER POSITION(@keys, e._key, false) == true REMOVE e IN @@edge_collection", {
-                  "@edge_collection": edgeCollection.name,
-                  "keys": edgeCollection.oldEdges
-                  });
-
-        edgeCollection.edges.forEach(function(edge) {
-            console[log_level]("Current Edge: %o", edge);
-            if (edge._from.toString().indexOf('/') == -1) {
-                edge._from = rubyObjectMap[edge._from.toString()]._id;
-            }
-            if (edge._to.toString().indexOf('/') == -1) {
-                edge._to = rubyObjectMap[edge._to.toString()]._id;
-            }
-
-            graph[edgeCollection.name].save(edge._from, edge._to, edge.attributes);
-        });
-    }
-
-    params.edgeCollections.forEach(insertOrReplaceConnection);
-
-    return rubyObjectMap;
-}
-JS
       end
     end
   end

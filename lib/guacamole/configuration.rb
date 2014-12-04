@@ -122,6 +122,10 @@ module Guacamole
         configuration.logger ||= (rails_logger || default_logger)
       end
 
+      def shared_path
+        Pathname.new(File.join(__dir__, "..", "..", "shared"))
+      end
+
       # Returns the graph associated with this Guacamole application.
       #
       # You can create more graphs by interacting with the database instance directly. This is just the main graph

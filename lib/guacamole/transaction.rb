@@ -101,10 +101,34 @@ module Guacamole
       @model      = options[:model]
     end
 
-    def edge_collections
-      mapper.edge_attributes.each_with_object([]) do |ea, edge_collections|
+    def real_edge_collections
+      @real_edge_collections ||= mapper.edge_attributes.each_with_object([]) do |ea, edge_collections|
         edge_collections << prepare_edge_collection_for_transaction(ea)
       end
+    end
+
+    def fake_edge_collections
+      fake_vertex = {
+        object_id: model.object_id,
+        collection: collection.collection_name,
+        document: mapper.model_to_document(model),
+        _key: model.key,
+        _id: model._id
+      }
+
+      [
+       {
+         name: nil,
+         fromVertices: [fake_vertex],
+         toVertices: [],
+         edges: [],
+         oldEdges: []
+       }
+      ]
+    end
+
+    def edge_collections
+      real_edge_collections.present? ? real_edge_collections : fake_edge_collections
     end
 
     def prepare_edge_collection_for_transaction(ea)

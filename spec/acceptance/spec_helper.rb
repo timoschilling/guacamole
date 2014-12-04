@@ -37,9 +37,9 @@ ENV['GUACAMOLE_ENV'] = 'test'
 Guacamole.configure do |config|
   logger = Logging.logger['guacamole_logger']
   logger.add_appenders(
-      Logging.appenders.file('log/acceptance.log')
+      Logging.appenders.file(File.join(__dir__, '..', '..', 'log/acceptance.log'))
   )
-  logger.level = :info
+  logger.level = :debug
 
   config.logger = logger
 

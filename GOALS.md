@@ -6,8 +6,16 @@
 * Reflect the nature of NoSQL in general and ArangoDB in particular
     * Use the Datamapper pattern, because it allows us to leverage ArangoDB features like nesting in a really nice way
     * Support ArangoDB features like transactions, the query language and graphs
+* Don't cut corners on quality
+* Strive for simplicity
 
 *The two main goals may conflict from time to time.*
+
+## Design Decisions
+
+We are well aware that the decision for data mapper in favor of active record has certain drawbacks. But this is the case with every single decision one will ever make in software development. We have strong believes in a simple software design. We think when it comes to building applications a good simple design can only be achieved by using simple libraries and frameworks. ActiveRecord is not simple anymore. And its usage will result in a not simple application. In our opinion one reason for this is the usage of the active record pattern. ActiveRecord is very convenient but it is not simple. Going with a data mapper approach is less convenient at first but will pay off in the long run.
+
+At the same time Guacamole should enable people to use [ArangoDB](https://www.arangodb.com) in their Ruby and especially Rails projects. Due to this we will always have to compromise between our pursuit of simplicity and the usability for a wide range of developers who are mostly used to the Rails Way of doing things. We try do be more on the simple side but eventually we will fail from time to time. We don't think this is inherently a bad thing because to fail is to learn as well. We will always re-evaluate our decisions and refactor whenever possible.
 
 ## Features of Guacamole 1.0
 

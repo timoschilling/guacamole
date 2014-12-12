@@ -582,3 +582,7 @@ If you want to contribute to the project, see CONTRIBUTING.md for details. It co
 
 * Lucas Dohmen ([@moonglum](https://github.com/moonglum)): Developer
 * Dirk Breuer ([@railsbros-dirk](https://github.com/railsbros-dirk)): Developer
+
+## Inspiration
+
+The work on Guacamole is heavily inspired by the remarkable work of the [ROM](http://rom-rb.org) team and especially by [Piotr Solnic](http://solnic.eu).
